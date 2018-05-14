@@ -80,7 +80,7 @@ int raw_svr(int argc, char **argv)
                     ERR("recv %s", strerror(errno));
                     break;
                 } else {
-                    jut_fc_cmd_t *head = reinterpret_cast<jut_fc_cmd_t*>(buf);
+//                    jut_fc_cmd_t *head = reinterpret_cast<jut_fc_cmd_t*>(buf);
                     int n;
                     for (n = 0; n < ret; n++) {
                         recv_count++;

@@ -4,9 +4,13 @@
 #include <unistd.h>
 #include <string.h>
 #include <string>
+#include <vector>
+#include <list>
 #include "util_misc.hpp"
 
 using std::string;
+using std::list;
+using std::vector;
 
 namespace tiny_utils {
 static int g_fd_pid = -1;
@@ -61,5 +65,36 @@ static void __attribute__((destructor)) remove_pid_file(void)
         remove(g_pid_file.c_str());
     }
 }
+
+void str_split(const string &s, list<string> &lst)
+{
+    lst.clear();
+    if (s.empty()) {
+        return;
+    }
+
+    size_t len = s.size();
+    size_t i;
+    vector<char> arg;
+
+    for (i = 0; i < len; i++) {
+        if (s[i] == ' ') {
+            if (!arg.empty()) {
+                string ss;
+                ss.assign(arg.begin(), arg.end());
+                lst.push_back(ss);
+                arg.clear();
+            }
+        } else {
+            arg.push_back(s[i]);
+        }
+    }
+    if (!arg.empty()) {
+        string ss;
+        ss.assign(arg.begin(), arg.end());
+        lst.push_back(ss);
+    }
+}
+
 } // namespace tiny_utils
 

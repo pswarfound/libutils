@@ -13,4 +13,4 @@ static int __test_##name##_callback(int argc, char **argv);\
 CALLBACK_REGIST(test, name, __test_##name##_callback);\
 int __test_##name##_callback(int argc, char **argv)
 
-
+#define TEST_CALL(name, argc, argv) __test_##name##_callback(argc, argv)

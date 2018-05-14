@@ -4,5 +4,6 @@
 TEST_REG(pidfile)
 {
     pause();
+    return 0;
 }
 

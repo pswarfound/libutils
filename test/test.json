@@ -1,0 +1,8 @@
+{
+    "redis_addr":"127.0.0.1",
+    "redis_port":6379,
+    "redis_req_name":"task",
+    "redis_resp_name":"result",
+    "model_config_path":"./model_config.json",
+    "thresh_config_path":"./thresh_config.json"
+}

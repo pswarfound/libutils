@@ -78,7 +78,7 @@ TEST_REG(ini)
     CALLBACK_FOREACH(ini, iter) {
         std::cout << CALLBACK_NAME(iter) << std::endl;
     }
-
+    return 0;
 }
 
 
