@@ -1,12 +1,13 @@
 #pragma once
 
+namespace tiny_utils {
 class SemPrivate;
 
-class CSem
+class Semapore
 {
  public:
-    explicit CSem(unsigned int value = 0);
-    ~CSem();
+    explicit Semapore(unsigned int value = 0);
+    ~Semapore();
 
  public:
     bool post();
@@ -16,4 +17,4 @@ class CSem
  private:
     SemPrivate *m_private;
 };
-
+} // namespace tiny_utils

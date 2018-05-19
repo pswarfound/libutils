@@ -99,11 +99,6 @@ TEST_REG(raw)
 {
     INFO("enter");
 
-    if (!strcmp(argv[1], "cli")) {
-        raw_cli(--argc, argv + 1);
-    } else if (!strcmp(argv[1], "svr")) {
-        raw_svr(--argc, argv + 1);
-    }
 
     return 0;
 }

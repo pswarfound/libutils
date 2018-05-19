@@ -3,10 +3,12 @@
 #include <vector>
 #include <list>
 #include <string>
+#include <sstream>
 #include "callback_test.h"
 #include "util_json.hpp"
 #include "util_debug.h"
 #include "util_misc.hpp"
+#include "util_shell.hpp"
 
 using namespace tiny_utils;
 using namespace std;
@@ -23,6 +25,7 @@ int __json_##name##_callback(int argc, const char **argv)
 CALLBACK_GROUP_INIT(json);
 
 static JsonHelper js;
+static string path;
 
 JSON_REG(open)
 {
@@ -36,17 +39,15 @@ JSON_REG(open)
                     << std::endl;
         return -1;
     }
+    path = argv[1];
     return 0;
 }
 
 JSON_REG(show)
 {
     string s;
-    bool pretty = false;
-    if (argc > 1) {
-        pretty = true;
-    }
-    if (!js.get_doc(s, pretty)) {
+    
+    if (!js.get_doc(s)) {
         std::cout << __func__ << " " << argv[1] << " failed "
                     << js.get_error()
                     << std::endl;
@@ -58,58 +59,111 @@ JSON_REG(show)
 
 JSON_REG(get)
 {
+    if (argc < 1) {
+        return -1;
+    }
+
+    bool ret;
+    int ival;
+    string sval;
+    float fval;
+    std::ostringstream ostr;
+    
+    if (argc < 3 || !strcmp(argv[2], "string")) {
+        ret = js.get(argv[1], sval);
+    } else if(!strcmp(argv[2], "int")) {
+        ret = js.get(argv[1], ival);
+        if (ret) {
+            ostr << ival;
+            sval = ostr.str();
+        }
+    } else if (!strcmp(argv[2], "float")) {
+        ret = js.get(argv[1], fval);
+        if (ret) {
+            ostr << fval;
+            sval = ostr.str();
+        }
+    }
+    
+    if (!ret) {
+        std::cout << __func__ << " " << argv[1] << " failed "
+                    << js.get_error()
+                    << std::endl;
+        return -1;
+    }
+    std::cout << sval << std::endl;
+    return 0;
 }
 
 JSON_REG(set)
 {
+    if (argc < 3) {
+        return -1;
+    }
+    bool bCreate = false;
+    if (argc > 3) {
+        bCreate = true;
+    }
+    string val;
+    if (!js.set(argv[1], argv[2], bCreate)) {
+        std::cout << __func__ << " " << argv[1] << " failed "
+                    << js.get_error()
+                    << std::endl;
+        return -1;
+    }
+
+    return 0;
 }
 
 JSON_REG(locate)
 {
 }
 
-typedef int (*do_shell)(string &s);
-extern void start_shell(do_shell fn);
-
-
-int do_json(string &s)
+JSON_REG(close)
 {
-    list<string> lst;
-    str_split(s, lst);
-    if (lst.empty()) {
-        return 0;
+    if (!js.save_to_file(path.c_str(), false)) {
+        std::cout << __func__ << " " << " failed "
+                << js.get_error()
+                << std::endl;
+        return -1;
     }
-    
-    const char **argv = (const char**)malloc(sizeof(char*) * lst.size());
-    size_t argc = 0;
-    list<string>::iterator iter_lst = lst.begin();
-    while (iter_lst != lst.end()) {
-        argv[argc++] = iter_lst->c_str();
-        iter_lst++;
-    }
+    return 0;
 
-    CALLBACK_ITER(json) iter;
-    CALLBACK_FOREACH(json, iter) {
-        if (CALLBACK_NAME_MATCH(iter, argv[0])) {
-            int ret =CALLBACK_RUN(iter, argc, argv);
-            if (ret < 0) {
-                ERR("json oper %s failed\n", argv[0]);
-            }
-            
-            free(argv);
-            return 0;
+}
+
+JSON_REG(save)
+{
+    if (argc < 2) {
+        return -1;
+    }
+    bool bPretty = argc > 2;
+    if (!js.save_to_file(argv[1], bPretty)) {
+        std::cout << __func__ << " " << argv[1] << " failed "
+                << js.get_error()
+                << std::endl;
+        return -1;
+    }
+    return 0;
+
+}
+
+static int do_json(int argc, const char **argv)
+{
+    json_callback fn = (json_callback)CALLBACK_GET(json, argv[0]);
+    if (fn != NULL) {
+        fn(argc, argv);
+    } else {
+        std::cout << "\njson command:\n" << std::endl;
+        CALLBACK_ITER(json) iter;
+        CALLBACK_FOREACH(json, iter) {
+            std::cout << CALLBACK_NAME(iter) << std::endl;
         }
     }
-
-    std::cout << "\njson command:\n" << std::endl;
-    CALLBACK_FOREACH(json, iter) {
-        std::cout << CALLBACK_NAME(iter) << std::endl;
-    }
-    free(argv);
+    
     return 0;
 }
 
 TEST_REG(json)
 {
-    start_shell(do_json);
+    start_shell("json", do_json);
 }

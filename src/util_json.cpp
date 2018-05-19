@@ -148,7 +148,7 @@ bool JsonHelper::clear() {
     }
 }
 
-bool JsonHelper::get_string(const char *key, string &out) {
+bool JsonHelper::get(const char *key, string &out) {
     try {
         if (key && m_private->m_val && m_private->m_val->IsObject()) {
             Value::ConstMemberIterator itr = m_private->m_val->FindMember(key); 
@@ -168,7 +168,7 @@ bool JsonHelper::get_string(const char *key, string &out) {
     return false;
 }
 
-bool JsonHelper::get_int(const char *key, int &out) {
+bool JsonHelper::get(const  char *key, int &out) {
     try {
         if (key && m_private->m_val && m_private->m_val->IsObject()) {
             Value::ConstMemberIterator itr = m_private->m_val->FindMember(key); 
@@ -188,7 +188,7 @@ bool JsonHelper::get_int(const char *key, int &out) {
     return false;
 }
 
-bool JsonHelper::get_float(const char *key, float &fval) {
+bool JsonHelper::get(const  char *key, float &fval) {
     try {
         if (key && m_private->m_val && m_private->m_val->IsObject()) {
             Value::ConstMemberIterator itr = m_private->m_val->FindMember(key); 
@@ -208,9 +208,9 @@ bool JsonHelper::get_float(const char *key, float &fval) {
     return false;
 }
 
-bool JsonHelper::set_string(const char *key, const char *val, bool bCreat) {
+bool JsonHelper::set(const char *key, const char *val, bool bCreat) {
     try {        
-        if (key && m_private->m_val && m_private->m_val->IsObject()) {
+        if (key && val && m_private->m_val && m_private->m_val->IsObject()) {
             Value::MemberIterator itr = m_private->m_val->FindMember(key); 
             if (itr != m_private->m_val->MemberEnd()) {
                 if (itr->value.IsString()) {
@@ -231,7 +231,7 @@ bool JsonHelper::set_string(const char *key, const char *val, bool bCreat) {
     return false;
 }
 
-bool JsonHelper::set_int(const char *key, int val, bool bCreat) {
+bool JsonHelper::set(const char *key, int val, bool bCreat) {
     try {        
         if (key && m_private->m_val && m_private->m_val->IsObject()) {
             Value::MemberIterator itr = m_private->m_val->FindMember(key); 
@@ -253,7 +253,7 @@ bool JsonHelper::set_int(const char *key, int val, bool bCreat) {
     return false;
 }
 
-bool JsonHelper::set_float(const char *key, float fval, bool bCreat) {
+bool JsonHelper::set(const char *key, float fval, bool bCreat) {
     try {        
         if (key && m_private->m_val && m_private->m_val->IsObject()) {
             Value::MemberIterator itr = m_private->m_val->FindMember(key); 

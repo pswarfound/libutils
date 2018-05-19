@@ -17,4 +17,4 @@ class Waiter : public noncopyable
  private:
     WaiterPrivate *m_private;
 };
-}
+} // namespace tiny_utils

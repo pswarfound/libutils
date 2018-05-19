@@ -1,19 +1,28 @@
 #include <iostream>
+#include <stdlib.h>
+#include <iostream>
+#include <vector>
+#include <list>
+#include <string>
+
 #include "callback_test.h"
 #include "util_ini.hpp"
 #include "util_debug.h"
+#include "util_misc.hpp"
+#include "util_shell.hpp"
 
 using namespace tiny_utils;
+using namespace std;
 
-typedef int (*ini_callback)(int argc, char **argv);
+typedef int (*ini_callback)(int argc, const char **argv);
 
 // declare callback group
 CALLBACK_PROTO_DECLARE(ini, ini_callback);
 
 #define INI_REG(name) \
-static int __ini_##name##_callback(int argc, char **argv);\
+static int __ini_##name##_callback(int argc, const char **argv);\
 CALLBACK_REGIST(ini, name, __ini_##name##_callback);\
-int __ini_##name##_callback(int argc, char **argv)
+int __ini_##name##_callback(int argc, const char **argv)
 
 CALLBACK_GROUP_INIT(ini);
 
@@ -58,26 +67,26 @@ INI_REG(read)
     return 0;
 }
 
-TEST_REG(ini)
-{
-    if (argc > 1) {
-        CALLBACK_ITER(ini) iter;
-        CALLBACK_FOREACH(ini, iter) {
-            if (CALLBACK_NAME_MATCH(iter, argv[1])) {
-                int ret =CALLBACK_RUN(iter, --argc, argv + 1);
-                if (ret < 0) {
-                    ERR("ini oper %s failed\n", argv[1]);
-                }
-                return ret;
-            }
+static int do_ini(int argc, const char **argv)
+{    
+    ini_callback fn = (ini_callback)CALLBACK_GET(ini, argv[0]);
+    if (fn != NULL) {
+        fn(argc, argv);
+    } else {
+        std::cout << "\nini command:\n" << std::endl;
+        CALLBACK_ITER(test) iter;
+        CALLBACK_FOREACH(test, iter) {
+            std::cout << CALLBACK_NAME(iter) << std::endl;
         }
     }
 
-    std::cout << "\nini command:\n" << std::endl;
-    CALLBACK_ITER(ini) iter;
-    CALLBACK_FOREACH(ini, iter) {
-        std::cout << CALLBACK_NAME(iter) << std::endl;
-    }
+    return 0;
+}
+
+TEST_REG(ini)
+{
+    start_shell("ini>", do_ini);
+
     return 0;
 }
 

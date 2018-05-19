@@ -18,12 +18,12 @@ class JsonHelper
     bool get_doc(string &, bool bPretty = true);
     const string &get_error() const;
 
-    bool get_string(const char *key, string &sval);    
-    bool get_int(const char *key, int &ival);    
-    bool get_float(const char *key, float &fval);
-    bool set_string(const char *key, const char *val, bool bCreat = false);
-    bool set_float(const char *key, float fval, bool bCreat = false);
-    bool set_int(const char *key, int ival, bool bCreat = false);
+    bool get(const char *key, string &sval);    
+    bool get(const char *key, int &ival);    
+    bool get(const char *key, float &fval);
+    bool set(const  char *key, const char *val, bool bCreat = false);
+    bool set(const  char *key, float fval, bool bCreat = false);
+    bool set(const  char *key, int ival, bool bCreat = false);
     bool locate_obj(const char *key, bool bCreat = false);
     bool locate_array(const char *key, bool bCreat = false);
 

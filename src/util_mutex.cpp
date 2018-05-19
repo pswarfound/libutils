@@ -8,26 +8,17 @@ class MutexPrivate
 {
  public:
     MutexPrivate()
-        : m_pmtx(new pthread_mutex_t)
     {
-        if (m_pmtx) {
-            if (pthread_mutex_init(m_pmtx, NULL) != 0) {
-                delete m_pmtx;
-                m_pmtx = NULL;
-            }
-        }
+        pthread_mutex_init(&m_mtx, NULL);
     }
     ~MutexPrivate()
     {
-        if (m_pmtx) {
-            pthread_mutex_destroy(m_pmtx);
-            delete m_pmtx;
-        }
+        pthread_mutex_destroy(&m_mtx);
     }
  private:
     friend class Mutex;
     friend class Condition;
-    pthread_mutex_t *m_pmtx;
+    pthread_mutex_t m_mtx;
 };
 
 Mutex::Mutex()
@@ -37,18 +28,15 @@ Mutex::Mutex()
 
 Mutex::~Mutex()
 {
-    if (m_private) {
-       delete m_private;
-    }
 }
 
 bool Mutex::lock()
 {
-    if (!m_private || !m_private->m_pmtx) {
+    if (!m_private) {
         return false;
     }
     
-    int ret = pthread_mutex_lock(m_private->m_pmtx);
+    int ret = pthread_mutex_lock(&m_private->m_mtx);
     if (ret) {
         return false;
     }
@@ -58,11 +46,11 @@ bool Mutex::lock()
 
 bool Mutex::unlock()
 {
-    if (!m_private || !m_private->m_pmtx) {
+    if (!m_private) {
         return false;
     }
 
-    int ret = pthread_mutex_unlock(m_private->m_pmtx);
+    int ret = pthread_mutex_unlock(&m_private->m_mtx);
     if (ret) {
         return false;
     }
@@ -76,7 +64,7 @@ void *Mutex::get_lock()
         return NULL;
     }
 
-    return m_private->m_pmtx;
+    return &m_private->m_mtx;
 }
 
 }// namespace tiny_utils

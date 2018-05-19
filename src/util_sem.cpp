@@ -8,13 +8,15 @@
 #error "glibc version  error"
 #endif
 
+namespace tiny_utils {
+
 class SemPrivate
 {
  public:
     sem_t   m_sem;
 };
 
-CSem::CSem(unsigned int value)
+Semapore::Semapore(unsigned int value)
     : m_private(new SemPrivate)
 {
     if (m_private) {
@@ -22,7 +24,7 @@ CSem::CSem(unsigned int value)
     }
 }
 
-CSem::~CSem()
+Semapore::~Semapore()
 {
     if (m_private) {
         sem_destroy(&m_private->m_sem);
@@ -30,7 +32,7 @@ CSem::~CSem()
     }
 }
 
-bool CSem::post()
+bool Semapore::post()
 {
     if (m_private && !sem_post(&m_private->m_sem)) {
        return true;
@@ -39,7 +41,7 @@ bool CSem::post()
     return false;
 }
 
-bool CSem::wait()
+bool Semapore::wait()
 {
     if (m_private && !sem_wait(&m_private->m_sem)) {
        return true;
@@ -48,7 +50,7 @@ bool CSem::wait()
     return false;
 }
 
-bool CSem::timed_wait(unsigned int ms)
+bool Semapore::timed_wait(unsigned int ms)
 {
     int ret;
     struct timespec ts;
@@ -64,4 +66,4 @@ bool CSem::timed_wait(unsigned int ms)
     return ret == 0;
 }
 
-
+} // namespace tiny_utils

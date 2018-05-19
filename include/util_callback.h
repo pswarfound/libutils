@@ -1,4 +1,4 @@
-    #ifndef __CALLBACK_CORE_H
+#ifndef __CALLBACK_CORE_H
 #define __CALLBACK_CORE_H
 #include <stddef.h>
 #include <string.h>
@@ -80,5 +80,17 @@ iter+=((iter + 1)== &CALLBACK_ROOT(group)?2:1))
 #define CALLBACK_NAME_MATCH(iter, name) (iter->__fname && strcasecmp(iter->__fname, name) == 0)
 #define CALLBACK_RUN(iter, ...) (iter->__fn(__VA_ARGS__))
 #define CALLBACK_NAME(iter) (iter->__fname)
+
+#define CALLBACK_GET(group, name) \
+({ \
+void *_ret = NULL; \
+CALLBACK_ITER(group) iter; \
+CALLBACK_FOREACH(group, iter) { \
+    if (CALLBACK_NAME_MATCH(iter, name)) { \
+        _ret = (void*)(iter->__fn); \
+    } \
+} \
+_ret; \
+})
 #endif
 

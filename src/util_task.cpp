@@ -47,7 +47,7 @@ bool Task::start()
         m_private->m_bExit = false;
         ret = pthread_create(&m_private->m_tid, NULL, task, this);
         if (ret < 0) {
-            ERR("start task failed. %s\n", strerror(errno));
+            ERR("start task failed. %s\n", strerror(ret));
             m_private->m_tid = INVALID_TASK_ID;
             return false;
         }
@@ -122,4 +122,5 @@ void PeriodTask::stop()
         m_private->m_tid = INVALID_TASK_ID;
     }
 }
-}
+
+}// namespace tiny_utils
