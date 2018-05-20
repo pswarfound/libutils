@@ -29,9 +29,16 @@ static int do_test(int argc, const char **argv)
     return 0;
 }
 
-int main(int argc, char **argv)
+int main(int argc, const char **argv)
 {
-    start_shell(">", do_test);
+    if (argc == 1) {
+        start_shell(">", do_test);
+    } else {
+        test_callback fn = (test_callback)CALLBACK_GET(test, argv[1]);
+        if (fn != NULL) {
+            fn(argc, argv);
+        }
+    }
     return 0;
 }
 

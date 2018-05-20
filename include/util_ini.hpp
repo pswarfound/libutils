@@ -17,6 +17,7 @@ class IniHelper : public noncopyable
     ~IniHelper();
 
     bool open(const string &file_path, const string &mode);
+    void close();
     bool is_open(void);
 
     bool read(const string &head, const string &key, string *value);
@@ -25,6 +26,12 @@ class IniHelper : public noncopyable
     bool read(const string &head, const string &key, float *value);
     bool read(const string &head, const string &key, double *value);
 
+    bool locate(const string &head);
+    bool locate(const string &head, const string &key);
+    bool remove(const string &head);
+    bool remove(const string &head, const string &key);
+    bool write(const string &head, const string &key, bool create, const char *fmt, ...);
+    bool save();
  private:
     IniImpl *m_private;
 };

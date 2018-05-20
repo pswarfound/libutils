@@ -4,7 +4,7 @@
 #include <vector>
 #include <list>
 #include <string>
-
+#include <stdio.h>
 #include "callback_test.h"
 #include "util_ini.hpp"
 #include "util_debug.hpp"
@@ -63,30 +63,80 @@ INI_REG(read)
     Value val;
     bool ret = false;
     if (type == "string") {
-        string sval;
         ret = ini.read(section, key, &val.val_string());
-        val = sval;
     } else if (type == "int") {
-        int ival;
-        ret = ini.read(section, key, &ival);
-        val = ival;
+        ret = ini.read(section, key, &val.val_int());
     } else if (type == "long") {
-        int64_t lval;
-        ret = ini.read(section, key, &lval);
-        val = lval;
+        ret = ini.read(section, key, &val.val_int64());
     } else if (type == "float") {
-        float fval;
-        ret = ini.read(section, key, &fval);
-        val = fval;
+        ret = ini.read(section, key, &val.val_float());
     } else if (type == "double") {
-        double dval;
-        ret = ini.read(section, key, &dval);
-        val = dval;
+        ret = ini.read(section, key, &val.val_double());
     }
     std::cout << "read section " << section
                 << " key " << key
                 << " value=" << val
                 << std::endl;
+    return 0;
+}
+
+INI_REG(delete)
+{
+    if (argc < 2) {
+        INI_ERR("too few param\n");
+        return -1;
+    }
+
+    if (!ini.is_open()) {
+        INI_ERR("ini not opened\n");
+        return -1;
+    }
+    string section = argv[1];
+    
+    bool ret = false;
+    if (argc < 3) {
+        ret = ini.remove(section);
+    } else {
+        string key = argv[2];
+        ret = ini.remove(section, key);
+    }
+    return 0;
+}
+
+
+INI_REG(write)
+{
+    if (argc < 3) {
+        INI_ERR("too few param\n");
+        return -1;
+    }
+
+    if (!ini.is_open()) {
+        INI_ERR("ini not opened\n");
+        return -1;
+    }
+    string section = argv[1];
+    string key = argv[2];
+    string val = argv[3];
+    bool create = false;
+
+    if (argc > 4) {
+        create = true;
+    }
+    
+    bool ret = false;
+    ret = ini.write(section, key, create, "%s", val.c_str());
+
+    return 0;
+}
+
+INI_REG(save)
+{
+    if (!ini.save()) {
+        INI_ERR("ini save failed\n");
+        return -1;
+    }
+    
     return 0;
 }
 
@@ -97,8 +147,8 @@ static int do_ini(int argc, const char **argv)
         fn(argc, argv);
     } else {
         std::cout << "\nini command:\n" << std::endl;
-        CALLBACK_ITER(test) iter;
-        CALLBACK_FOREACH(test, iter) {
+        CALLBACK_ITER(ini) iter;
+        CALLBACK_FOREACH(ini, iter) {
             std::cout << CALLBACK_NAME(iter) << std::endl;
         }
     }

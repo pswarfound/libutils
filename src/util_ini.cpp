@@ -1,11 +1,15 @@
 #include <stdlib.h>
 #include <string>
 #include <errno.h>
+#include <stdarg.h>
+#include <stdio.h>
+#include <vector>
 #include "util_ini.hpp"
 #include "util_debug.hpp"
 #include "libini.h"
 
 using std::string;
+using std::vector;
 
 namespace tiny_utils {
 
@@ -46,10 +50,7 @@ bool IniHelper::is_open(void)
 
 bool IniHelper::open(const string &ini_file_path, const string &mode)
 {
-    if (is_open()) {
-        ini_close(m_private->m_ini_fd);
-        m_private->m_ini_fd = NULL;
-    }
+    close();
     
     if (ini_file_path.empty()) {
         return false;
@@ -63,6 +64,14 @@ bool IniHelper::open(const string &ini_file_path, const string &mode)
     return true;
 }
 
+void IniHelper::close()
+{
+    if (is_open()) {
+        ini_close(m_private->m_ini_fd);
+        m_private->m_ini_fd = NULL;
+    }
+}
+
 bool IniHelper::read(const string &head, const string &key, string *value)
 {
     if (!is_open()) {
@@ -74,12 +83,7 @@ bool IniHelper::read(const string &head, const string &key, string *value)
         return false;
     }
 
-    if (ini_locateHeading(m_private->m_ini_fd, head.c_str()) != 0) {
-        INI_ERR("locate head %s\n", head.c_str());
-        return false;
-    }
-
-    if (ini_locateKey(m_private->m_ini_fd, key.c_str()) != 0) {
+    if (!locate(head, key)) {
         INI_ERR("locate head %s key %s\n", head.c_str(), key.c_str());
         return false;
     }
@@ -160,6 +164,77 @@ bool IniHelper::read(const string &head, const string &key, double *value)
     if (errno == ERANGE) {
         return false;
     }
+    return true;
+}
+
+bool IniHelper::locate(const string &head)
+{
+    if (!is_open()) {
+        return false;
+    }
+
+    if (ini_locateHeading(m_private->m_ini_fd, head.c_str()) != 0) {
+        return false;
+    }
+    return true;
+}
+
+bool IniHelper::locate(const string &head, const string &key)
+{
+    if (!locate(head)) {
+        return false;
+    }
+
+    if (ini_locateKey(m_private->m_ini_fd, key.c_str()) != 0) {
+        return false;
+    }
+    return true;
+}
+
+bool IniHelper::remove(const string &head)
+{
+    if (!locate(head)) {
+        INI_ERR("head %s not found", head.c_str());
+        return false;
+    }
+    return ini_deleteHeading(m_private->m_ini_fd) == 0;
+}
+
+bool IniHelper::remove(const string &head, const string &key)
+{
+    if (!locate(head, key)) {
+        INI_ERR("head %s key %s not found", head.c_str(), key.c_str());
+        return false;
+    }
+    return ini_deleteKey(m_private->m_ini_fd) == 0;
+}
+
+bool IniHelper::write(const string &head, const string &key, bool create, const char *fmt, ...)
+{
+    if (!locate(head) && !create) {
+        return false;
+    }
+
+    if (ini_locateKey(m_private->m_ini_fd, key.c_str()) != 0 && !create) {
+        return false;
+    }
+
+
+    va_list ap;
+    va_start(ap, fmt);
+    int len = vsnprintf(NULL, 0, fmt, ap) + 1;    
+    va_end(ap);
+    va_start(ap, fmt);
+    string s;
+    s.resize(len);
+    vsnprintf(&s[0], len, fmt, ap);
+    va_end(ap);
+    return ini_writeString(m_private->m_ini_fd, &s[0]) == 0;
+}
+
+bool IniHelper::save()
+{
+    close();
     return true;
 }
 

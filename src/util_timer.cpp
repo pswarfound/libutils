@@ -14,10 +14,10 @@ unsigned int get_abs_timesec()
 }
 
 
-class TimerPrivate
+class TimerImpl
 {
  public:
-    explicit TimerPrivate(unsigned int ms)
+    explicit TimerImpl(unsigned int ms)
         : m_count(0), m_setval(ms)
     {
         m_count = get_abs_timesec();
@@ -29,7 +29,7 @@ class TimerPrivate
 };
 
 Timer::Timer(unsigned int ms)
-    : m_private(new TimerPrivate(ms))
+    : m_private(new TimerImpl(ms))
 {
 }
 
