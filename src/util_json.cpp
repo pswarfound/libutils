@@ -125,7 +125,6 @@ bool JsonImpl::get_array_value(size_t idx, Value **val)
     return true;
 }
 
-
 JsonHelper::JsonHelper()
     : m_private(new JsonImpl)
 {
@@ -1453,7 +1452,7 @@ bool JsonHelper::locate_array(size_t idx, bool bCreat)
          && !(m_private->m_errno == eOutOfRange 
                  && idx == m_private->m_val->Size()
                  && bCreat)) {
-         return false;
+        return false;
      }
     
      try {
@@ -1472,7 +1471,7 @@ bool JsonHelper::locate_array(size_t idx, bool bCreat)
         } else {
             Value obj(kArrayType);
             m_private->m_val->PushBack(obj, m_private->m_allocator);
-            return locate_obj(idx);
+            return locate_array(idx);
         }
     } catch(...) {
         m_private->m_errno = eInternalError;
