@@ -9,7 +9,7 @@
 #include "util_ini.hpp"
 #include "util_debug.hpp"
 #include "util_misc.hpp"
-//#include "util_shell.hpp"
+#include "util_shell.hpp"
 
 using namespace tiny_utils;
 using namespace std;
@@ -34,22 +34,22 @@ INI_REG(open)
         return -1;
     }
     if (!ini.open(argv[1], argv[2])) {
-        ERR("open %s failed\n", argv[1]);
+        INI_ERR("open %s failed\n", argv[1]);
         return -1;        
     }
-    INFO("open %s success\n", argv[1]);
+    INI_INF("open %s success\n", argv[1]);
     return 0;
 }
 
 INI_REG(read)
 {
     if (argc < 3) {
-        ERR("too few param\n");
+        INI_ERR("too few param\n");
         return -1;
     }
 
     if (!ini.is_open()) {
-        ERR("ini not opened\n")
+        INI_ERR("ini not opened\n");
         return -1;
     }
     string section = argv[1];
@@ -85,7 +85,7 @@ static int do_ini(int argc, const char **argv)
 
 TEST_REG(ini)
 {
-//    start_shell("ini>", do_ini);
+    start_shell("ini>", do_ini);
 
     return 0;
 }

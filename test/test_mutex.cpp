@@ -22,7 +22,7 @@ TEST_REG(mutex)
 {
     Mutex mtx;
     MutexGuard lock(mtx);
-    INFO("enter");
+    INF(__func__, "enter");
     return 0;
 }
 

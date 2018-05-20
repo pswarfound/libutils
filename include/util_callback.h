@@ -4,10 +4,14 @@
 #include <string.h>
 
 #define CALLBACK_KEY_DECLARE \
+size_t __head1; \
+size_t __head2; \
 const char *__callback_KEY1;\
 const char *__callback_KEY2;
 
 #define CALLBACK_KEY_REGIST(group) \
+__head1: 0xdeadbeaf, \
+__head2: 0xdeadbeaf, \
 __callback_KEY1:"__"#group"_1",\
 __callback_KEY2:"__"#group"_2",\
 
@@ -41,9 +45,13 @@ void __attribute__((constructor)) __callback_##group##_init()\
     int keylen = strlen("__"#group"_1");\
     do {\
         p = CALLBACK_START(group) - 1;\
-        if (!p->__callback_KEY1  \
-            || !p->__callback_KEY2 \
-            || strncmp(p->__callback_KEY1, "__"#group"_1", keylen) \
+        if (p->__head1 != 0xdeadbeaf \
+            || p->__head2 != 0xdeadbeaf \
+            || !p->__callback_KEY1  \
+            || !p->__callback_KEY2) { \
+            break; \
+        } \
+        if (strncmp(p->__callback_KEY1, "__"#group"_1", keylen) \
             || strncmp(p->__callback_KEY2, "__"#group"_2", keylen)) {\
             break;\
         }\
@@ -51,9 +59,13 @@ void __attribute__((constructor)) __callback_##group##_init()\
     } while(1);\
     do {\
         p = CALLBACK_END(group) + 1;\
-        if (!p->__callback_KEY1  \
-            || !p->__callback_KEY2 \
-            || strncmp(p->__callback_KEY1, "__"#group"_1", keylen) \
+        if (p->__head1 != 0xdeadbeaf \
+            || p->__head2 != 0xdeadbeaf \
+            || !p->__callback_KEY1  \
+            || !p->__callback_KEY2) { \
+            break; \
+        } \
+        if (strncmp(p->__callback_KEY1, "__"#group"_1", keylen) \
             || strncmp(p->__callback_KEY2, "__"#group"_2", keylen)) {\
             break;\
         }\

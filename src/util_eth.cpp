@@ -25,6 +25,13 @@
 #include "util_debug.hpp"
 #include "util_file.hpp"
 
+#define ETH_DBG(...) DBG("Eth", __VA_ARGS__)
+#define ETH_INF(...) INF("Eth", __VA_ARGS__)
+#define ETH_ERR(...) ERR("Eth", __VA_ARGS__)
+#define ETH_WRN(...) WRN("Eth", __VA_ARGS__)
+#define ETH_FTL(...) FTL("Eth", __VA_ARGS__)
+
+namespace tiny_utils {
 bool is_loopback(const string &ip)
 {
     return ip == "lo";
@@ -38,7 +45,7 @@ bool get_netdev_index(int fd, const string &netdev, int &idx)
     snprintf(if_req.ifr_name, sizeof(if_req.ifr_name), "%s", netdev.c_str());
 
     if (ioctl(fd, SIOCGIFINDEX, &if_req) == -1) {
-        ERR("SIOCGIFINDEXfailed. %s", strerror(errno));
+        ETH_ERR("SIOCGIFINDEXfailed. %s", strerror(errno));
         return false;
     }
     idx = if_req.ifr_ifindex;
@@ -135,7 +142,7 @@ bool get_netdev_driver(const string &ifname, string &drv_name)
     FILE *fp = NULL;
     fp = fopen(buf, "r");
     if (fp == NULL) {
-        ERR("open. %s %s\n", buf, strerror(errno));
+        ETH_ERR("open. %s %s\n", buf, strerror(errno));
         return false;
     }
 
@@ -172,15 +179,15 @@ bool set_netdev_promiscuos(int fd, const string &ifname)
     memset(&ethreq, 0, sizeof(struct ifreq));
     strncpy(ethreq.ifr_name, ifname.c_str(), IFNAMSIZ);
     if (ioctl(fd, SIOCGIFFLAGS, &ethreq) == -1) {
-        ERR("SIOCGIFFLAGS %s", strerror(errno));
+        ETH_ERR("SIOCGIFFLAGS %s", strerror(errno));
         return false;
     }
 
     ethreq.ifr_flags |= IFF_PROMISC;
     if (ioctl(fd, SIOCSIFFLAGS, &ethreq) == -1) {
-        ERR("SIOCSIFFLAGS %s", strerror(errno));
+        ETH_ERR("SIOCSIFFLAGS %s", strerror(errno));
         return false;
     }
     return true;
 }
-
+}  // namespace tiny_utils

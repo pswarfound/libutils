@@ -6,7 +6,7 @@
 #include <iostream>
 #include "callback_test.h"
 #include "util_misc.hpp"
-//#include "util_shell.hpp"
+#include "util_shell.hpp"
 
 using namespace std;
 using namespace tiny_utils;
@@ -15,13 +15,11 @@ CALLBACK_GROUP_INIT(test);
 
 static int do_test(int argc, const char **argv)
 {
-    int i;
-    
     test_callback fn = (test_callback)CALLBACK_GET(test, argv[0]);
     if (fn != NULL) {
         fn(argc, argv);
     } else {
-        std::cout << "\njson command:\n" << std::endl;
+        std::cout << "\ncommand:\n" << std::endl;
         CALLBACK_ITER(test) iter;
         CALLBACK_FOREACH(test, iter) {
             std::cout << CALLBACK_NAME(iter) << std::endl;
@@ -33,8 +31,7 @@ static int do_test(int argc, const char **argv)
 
 int main(int argc, char **argv)
 {
-   // start_shell(">", do_test);
-    do_test(--argc, (const char **)argv + 1);
+    start_shell(">", do_test);
     return 0;
 }
 

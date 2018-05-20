@@ -63,7 +63,7 @@ bool IniHelper::open(const string &ini_file_path, const string &mode)
 bool IniHelper::read_string(const string &head, const string &key, string *value)
 {
     if (!m_private->is_open()) {
-        ERR("not opened\n");
+        INI_ERR("not opened\n");
         return false;
     }
 
@@ -72,12 +72,12 @@ bool IniHelper::read_string(const string &head, const string &key, string *value
     }
 
     if (ini_locateHeading(m_private->m_ini_fd, head.c_str()) != 0) {
-        ERR("locate head %s\n", head.c_str());
+        INI_ERR("locate head %s\n", head.c_str());
         return false;
     }
 
     if (ini_locateKey(m_private->m_ini_fd, key.c_str()) != 0) {
-        ERR("locate head %s key %s\n", head.c_str(), key.c_str());
+        INI_ERR("locate head %s key %s\n", head.c_str(), key.c_str());
         return false;
     }
     
@@ -93,7 +93,7 @@ bool IniHelper::read_string(const string &head, const string &key, string *value
     }
     
     if (ini_readString(m_private->m_ini_fd, &(*value)[0], value->size()) != value->size()) {
-        ERR("read val head %s key %s\n", head.c_str(), key.c_str());
+        INI_ERR("read val head %s key %s\n", head.c_str(), key.c_str());
         return false;
     }
 

@@ -19,10 +19,17 @@
 #endif
 #include <linux/filter.h>
 #include <string>
+#include <stdio.h>
 #include "util_eth.hpp"
 #include "util_sock.hpp"
 #include "util_debug.hpp"
 
+#define SOCK_DBG(...) DBG("Sock", __VA_ARGS__)
+#define SOCK_INF(...) INF("Sock", __VA_ARGS__)
+#define SOCK_ERR(...) ERR("Sock", __VA_ARGS__)
+#define SOCK_WRN(...) WRN("Sock", __VA_ARGS__)
+#define SOCK_FTL(...) FTL("Sock", __VA_ARGS__)
+namespace tiny_utils {
 BaseSock::BaseSock(int domain, int type, int protocol)
     : m_type(type), m_domain(domain), m_protocol(protocol),
         m_sockFd(-1), m_devidx(-1)
@@ -38,7 +45,7 @@ bool BaseSock::open()
 {
     m_sockFd = socket(m_domain, m_type, htons(m_protocol));
     if (m_sockFd < 0) {
-        ERR("create sock failed. %s\n", strerror(errno));
+        SOCK_ERR("create sock failed. %s\n", strerror(errno));
         return false;
     }
 
@@ -62,7 +69,7 @@ bool BaseSock::setsockopt(int level, int optname, const void *optval, socklen_t 
     }
 
     if (::setsockopt(m_sockFd, level, optname, optval, optlen) < 0) {
-        ERR("set sock opt. %s\n", strerror(errno));
+        SOCK_ERR("set sock opt. %s\n", strerror(errno));
         return false;
     }
     return true;
@@ -100,7 +107,7 @@ bool BaseSock::bind_to_addr()
     }
 
     if (::bind(m_sockFd, (struct sockaddr*)&m_addrlocal, sizeof(m_addrlocal)) < 0) {
-        ERR("bind sock opt. %s\n", strerror(errno));
+        SOCK_ERR("bind sock opt. %s\n", strerror(errno));
         return false;
     }
     return true;
@@ -113,7 +120,7 @@ bool BaseSock::bind_to_device(const string &dev_name)
     snprintf(req.ifr_name, sizeof(req.ifr_name), "%s", dev_name.c_str());
     if (!setsockopt(SOL_SOCKET, SO_BINDTODEVICE, \
       reinterpret_cast<char *>(&req), sizeof(req))) {
-           ERR("SO_BINDTODEVICE failed");
+           SOCK_ERR("SO_BINDTODEVICE failed");
            return false;
     }
 
@@ -197,7 +204,7 @@ bool SockUDP::sendn(const void *pData, size_t count)
     ret = sendto(m_sockFd, pData, count, 0,  (struct sockaddr*)&m_addrto,
                                         sizeof(m_addrto));
     if (ret != static_cast<int>(count)) {
-        ERR("%d %s\n", m_sockFd, strerror(errno));
+        SOCK_ERR("%d %s\n", m_sockFd, strerror(errno));
         return false;
     }
 
@@ -238,7 +245,7 @@ int SockUDP::recv_ex(void *pDst, size_t count, string &srcip)
             }
        }
     } else if (ret < 0) {
-        ERR("recv %d %s\n", m_sockFd, strerror(errno));
+        SOCK_ERR("recv %d %s\n", m_sockFd, strerror(errno));
     }
 
     return ret;
@@ -278,7 +285,7 @@ bool SockRaw::sendn(const void *vp_src, size_t count)
     ret = sendto(m_sockFd, vp_src, count, 0, (struct sockaddr *)&sa, sizeof(sa));
 
     if (ret != static_cast<int>(count)) {
-        ERR("%d %s\n", m_sockFd, strerror(errno));
+        SOCK_ERR("%d %s\n", m_sockFd, strerror(errno));
         return false;
     }
 
@@ -316,10 +323,10 @@ bool SockRaw::set_eth_filter(unsigned short packet_type)
 
     /* Attach the filter to the socket */
     if (!setsockopt(SOL_SOCKET, SO_ATTACH_FILTER, &Filter, sizeof(Filter))) {
-        ERR("SO_ATTACH_FILTER %s", strerror(errno));
+        SOCK_ERR("SO_ATTACH_FILTER %s", strerror(errno));
         return false;
     }
 
     return true;
 }
-
+}

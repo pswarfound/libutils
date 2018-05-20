@@ -5,6 +5,7 @@
 
 using std::string;
 using std::list;
+namespace tiny_utils {
 
 class BaseSock
 {
@@ -63,4 +64,4 @@ class SockRaw: public BaseSock
     virtual bool set_eth_filter(unsigned short packet_type);
     virtual int recv(void *vp_dst, size_t count);
 };
-
+}

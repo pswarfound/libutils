@@ -1,3 +1,4 @@
+#if 0
 #include <stdlib.h>
 #include <errno.h>
 #include <string.h>
@@ -102,4 +103,4 @@ TEST_REG(raw)
 
     return 0;
 }
-
+#endif

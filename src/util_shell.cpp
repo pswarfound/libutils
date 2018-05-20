@@ -209,7 +209,7 @@ void start_shell(const char *promt, shell_callback fn)
                 vt.show("\n");
                 
                 string line;
-                sh.get_line(line);
+                sh.read_line(line);
                 sh.clear();
                 if (!line.empty()) {
                     const char **argv = NULL;

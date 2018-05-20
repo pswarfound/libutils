@@ -11,11 +11,11 @@ class Svr : public PeriodTask
 public:
     void job() {
         while (!is_exit()) {
-            INFO("enter");
+            INF(NULL, "enter");
             sleep(5);
-            INFO("wake");
+            INF(NULL, "wake");
         }
-        INFO("quit");
+        INF(NULL, "quit");
     }
     Waiter waiter;    
 };
@@ -24,11 +24,11 @@ static Svr svr;
 
 TEST_REG(waiter)
 {
-    DBG("enter");
+    DBG(NULL, "enter");
 
     svr.start();
     
-    DBG("enter");
+    DBG(NULL, "enter");
     bool bExit = false;
     while (!bExit) {
         int c = getchar();
