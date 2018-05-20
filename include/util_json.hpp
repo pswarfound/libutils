@@ -19,6 +19,7 @@ class JsonHelper
         eNotArray,
         eTypeMissmatch,
         eNoEntry,
+        eOutOfRange,
     }js_errno_e;
     
     JsonHelper();
@@ -30,32 +31,52 @@ class JsonHelper
     bool get_doc(string &, bool bPretty = true);
     int get_errno(void);
     const string &get_error() const;
-    bool current(string &key);
+
     /// for locate then get/set operations
-    bool get(const char *key, string *sval); 
-    bool get(const char *key, int *ival);
-    bool get(const char *key, int64_t *ival);
-    bool get(const char *key, unsigned int *ival);
-    bool get(const char *key, uint64_t *ival);
-    bool get(const char *key, float *fval);
-    bool get(const char *key, double *fval);
+    bool get(const char *key, string *val); 
+    bool get(const char *key, int *val);
+    bool get(const char *key, int64_t *val);
+    bool get(const char *key, unsigned int *val);
+    bool get(const char *key, uint64_t *val);
+    bool get(const char *key, float *val);
+    bool get(const char *key, double *val);
 
     bool set(const char *key, const char *val, bool bCreat = false);
     bool set(const char *key, const string &val, bool bCreat = false);
-    bool set(const char *key, float fval, bool bCreat = false);
-    bool set(const char *key, double fval, bool bCreat = false);
-    bool set(const char *key, int ival, bool bCreat = false);
-    bool set(const char *key, const int64_t &fval, bool bCreat = false);
-    bool set(const char *key, unsigned int ival, bool bCreat = false);
-    bool set(const char *key, const uint64_t &fval, bool bCreat = false);
+    bool set(const char *key, float val, bool bCreat = false);
+    bool set(const char *key, const double &val, bool bCreat = false);
+    bool set(const char *key, int val, bool bCreat = false);
+    bool set(const char *key, const int64_t &val, bool bCreat = false);
+    bool set(const char *key, unsigned int val, bool bCreat = false);
+    bool set(const char *key, const uint64_t &val, bool bCreat = false);
 
     bool locate_obj(const char *key, bool bCreat = false);
-    bool out_obj();
-    bool locate_path(const char *path);
-  
-    #if 0
     bool locate_array(const char *key, bool bCreat = false);
-    #endif
+    bool locate_path(const char *path);
+    bool out(int step = 1);
+
+
+    /// for array operation
+    bool get(size_t idx, string *val); 
+    bool get(size_t idx, int *val);
+    bool get(size_t idx, int64_t *val);
+    bool get(size_t idx, unsigned int *val);
+    bool get(size_t idx, uint64_t *val);
+    bool get(size_t idx, float *val);
+    bool get(size_t idx, double *val);
+
+    bool set(size_t idx, const char *val, bool bCreat = false);
+    bool set(size_t idx, const string &val, bool bCreat = false);
+    bool set(size_t idx, float val, bool bCreat = false);
+    bool set(size_t idx, double &val, bool bCreat = false);
+    bool set(size_t idx, int val, bool bCreat = false);
+    bool set(size_t idx, const int64_t &val, bool bCreat = false);
+    bool set(size_t idx, unsigned int val, bool bCreat = false);
+    bool set(size_t idx, const uint64_t &val, bool bCreat = false);
+    
+ //   bool locate_obj(size_t idx, bool bCreat = false);
+   // bool locate_array(size_t idx, bool bCreat = false);
+
     #if 0
     bool get(size_t idx, string &sval);    
     bool get(size_t idx, int &ival);    

@@ -94,7 +94,7 @@ INI_REG(read)
         ret = ini.read(section, key, &val.as_int64(), base);
     } else if (type == "float") {
         val.reset(Value::floatValue);
-       ret = ini.read(section, key, &val.as_float());
+        ret = ini.read(section, key, &val.as_float());
     } else if (type == "double") {
         val.reset(Value::realValue);
         ret = ini.read(section, key, &val.as_real());
@@ -103,6 +103,7 @@ INI_REG(read)
                 << " key " << key
                 << " value=" << val
                 << std::endl;
+    (void)ret;
     return 0;
 }
 

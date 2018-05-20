@@ -36,6 +36,8 @@ class JsonImpl {
 
     bool get_obj_value(const char *key, const Value **val);
     bool get_obj_value(const char *key, Value **val);
+    bool get_array_value(size_t idx, const Value **val);
+    bool get_array_value(size_t idx, Value **val);
     int m_errno;
     string m_errs;
     list<string> m_track;
@@ -56,7 +58,7 @@ bool JsonImpl::get_obj_value(const char *key, const Value **val)
         return false;
     }
     
-    m_errno = kParseErrorNone;
+    m_errno = JsonHelper::eNoErr;
     try {
         if (m_val->IsObject()) {
             Value::ConstMemberIterator itr = m_val->FindMember(key); 
@@ -82,7 +84,7 @@ bool JsonImpl::get_obj_value(const char *key,  Value **val)
         return false;
     }
     
-    m_errno = kParseErrorNone;
+    m_errno = JsonHelper::eNoErr;
     try {
         if (m_val->IsObject()) {
             Value::MemberIterator itr = m_val->FindMember(key); 
@@ -101,9 +103,33 @@ bool JsonImpl::get_obj_value(const char *key,  Value **val)
     return false;
 }
 
+bool JsonImpl::get_array_value(size_t idx, const Value **val)
+{   
+    return get_array_value(idx, (Value**)val);
+}
+
+bool JsonImpl::get_array_value(size_t idx, Value **val)
+{
+    if (!m_val->IsArray()) {
+        m_errno = JsonHelper::eTypeMissmatch;
+        return false;
+    }
+    
+    m_errno = JsonHelper::eNoErr;
+    if (idx >= m_val->Size()) {
+        m_errno = JsonHelper::eOutOfRange;
+        return false;
+    }
+    *val = &(*m_val)[idx];
+    
+    return true;
+}
+
+
 JsonHelper::JsonHelper()
     : m_private(new JsonImpl)
 {
+    m_private->m_doc.SetObject();
 }
 
 JsonHelper::~JsonHelper()
@@ -183,21 +209,6 @@ const string &JsonHelper::get_error() const
 {
     return m_private->m_errs;
 };
-
-bool JsonHelper::current(string &key)
-{
-    if (!m_private->m_val) {
-       m_private->m_errno = eInternalError;
-       return false;
-    }
-    
-    if (!m_private->m_val->IsObject()) {
-        m_private->m_errno = eTypeMissmatch;
-        return false;
-    }
-    //key = m_private->m_val->name;
-    return true;
-}
 
 bool JsonHelper::save_to_file(const char *path, bool bPretty) {
     try {
@@ -508,7 +519,7 @@ bool JsonHelper::set(const char *key, float in, bool bCreat) {
     return true;
 }
 
-bool JsonHelper::set(const char *key, double in, bool bCreat) {
+bool JsonHelper::set(const char *key, const double &in, bool bCreat) {
     if (!key) {
         m_private->m_errno = eInvalidParam;
         return false;
@@ -644,31 +655,44 @@ bool JsonHelper::locate_obj(const char *key, bool bCreat) {
     
     return true;
 }
-#if 0
 
 bool JsonHelper::locate_array(const char *key, bool bCreat) {
+    if (!key) {
+        m_private->m_errno = eInvalidParam;
+        return false;
+    }
+
+    Value *val = NULL;
+    if (((!m_private->get_obj_value(key, &val) || val == NULL)
+        && m_private->m_errno != eNoEntry)
+        || (m_private->m_errno == eNoEntry && !bCreat)) {
+        return false;
+    }
     try {
-        if (m_private->m_val && m_private->m_val->IsObject()) {
-            Value::MemberIterator itr = m_private->m_val->FindMember(key);        
-            if (itr != m_private->m_val->MemberEnd()) {
-                if (itr->value.IsArray()) {
-                    m_private->m_val = &(itr->value);
-                    m_private->m_track.push_back(m_private->m_val);
-                }
-                return true;
-            } else if (bCreat) {
-                Value val(kArrayType);
-                Value val_key(kStringType);
-                val_key.SetString(key, strlen(key), m_private->m_allocator);
-                m_private->m_val->AddMember(val_key, val, m_private->m_allocator);
-                return locate_array(key);
+        if (m_private->m_errno == eNoErr) {
+            if (!val->IsArray()) {
+                m_private->m_errno = eTypeMissmatch;
+                return false;
             }
+            m_private->m_val = val;
+            m_private->m_track.push_back(key);
+        } else {
+            Value obj(kArrayType);
+            Value val_key(kStringType);
+            val_key.SetString(key, strlen(key), m_private->m_allocator);
+            m_private->m_val->AddMember(val_key, obj, m_private->m_allocator);
+            return locate_array(key);
         }
     } catch(...) {
+        m_private->m_errno = eInternalError;
+        return false;
     }
-    return false;
+    
+    return true;
+
 }
 
+#if 0
 int JsonHelper::size() {
     try {
         if (m_private->m_val) {
@@ -893,34 +917,52 @@ bool JsonHelper::add_into_obj() {
     return false;
 }
 #endif
-bool JsonHelper::out_obj() {
-    // at root
-    if (m_private->m_track.empty()) {
+bool JsonHelper::out(int step) {
+    if (step <=0) {
+        m_private->m_errno = eInvalidParam;
         return false;
     }
-    
-    m_private->m_track.pop_back();
-    m_private->m_val = &m_private->m_doc;
     // at root
     if (m_private->m_track.empty()) {
-        return true;
+        m_private->m_errno = eOutOfRange;
+        return false;
     }
-    list<string> path;
-    path.assign(m_private->m_track.begin(), m_private->m_track.end());
-    m_private->m_track.clear();
+    try {
+        while (step-- && !m_private->m_track.empty()) {
+            m_private->m_track.pop_back();
+        }
+        m_private->m_val = &m_private->m_doc;
+        // at root
+        if (m_private->m_track.empty()) {
+            return true;
+        }
+        list<string> path;
+        path.assign(m_private->m_track.begin(), m_private->m_track.end());
+        m_private->m_track.clear();
 
-    list<string>::iterator iter = path.begin();
-    while (iter != path.end()) {
-        locate_obj(iter->c_str());
-        iter++;
+        list<string>::iterator iter = path.begin();
+        while (iter != path.end()) {
+            if (!locate_obj(iter->c_str()) && !locate_array(iter->c_str())) {
+                m_private->m_track.clear();
+                m_private->m_val = &m_private->m_doc;
+                m_private->m_errno = eNoEntry;
+                return false;
+            }
+            iter++;
+        }
+    } catch(...) {
+        m_private->m_track.clear();
+        m_private->m_val = &m_private->m_doc;
+        m_private->m_errno = eInternalError;
+        return false;
     }
-    
     return true;
 }
 
 static bool parse_path(const char *path, list<string> &lst)
 {
     str_split(path, '/', lst);
+    return true;
 }
 
 bool JsonHelper::locate_path(const char *path)
@@ -937,18 +979,425 @@ bool JsonHelper::locate_path(const char *path)
         return false;
     }
 
-    list<string>::iterator iter = lst.begin();
+    list<string>::const_iterator iter = lst.begin();
     while (iter != lst.end()) {
         if (!locate_obj(iter->c_str())) {
-            m_private->m_track.clear();
-            m_private->m_val = &m_private->m_doc;
-            m_private->m_errno = eNoEntry;
-            return false;
+            list<string>::const_iterator iter2 = iter;
+            iter2++;
+            if (iter2 == lst.end() && locate_array(iter->c_str())) {
+                return true;
+            } else {
+                m_private->m_track.clear();
+                m_private->m_val = &m_private->m_doc;
+                m_private->m_errno = eNoEntry;
+                return false;
+            }
         }
         iter++;
     }
     return true;
 }
+
+bool JsonHelper::get(size_t idx, string *out)
+{
+    if (!out) {
+        m_private->m_errno = eInvalidParam;
+        return false;
+    }
+    
+    const Value *val = NULL;
+    if (!m_private->get_array_value(idx, &val)) {
+        return false;
+    }
+    
+    if (!val->IsString()) {
+        m_private->m_errno = eTypeMissmatch;
+        return false;
+    }
+
+    *out = val->GetString();
+    return true;
+}
+
+bool JsonHelper::get(size_t idx, int *out)
+{
+    if (!out) {
+        m_private->m_errno = eInvalidParam;
+        return false;
+    }
+    
+    const Value *val = NULL;
+    if (!m_private->get_array_value(idx, &val)) {
+        return false;
+    }
+    
+    if (!val->IsInt()) {
+        m_private->m_errno = eTypeMissmatch;
+        return false;
+    }
+
+    *out = val->GetInt();
+    return true;
+}
+
+bool JsonHelper::get(size_t idx, int64_t *out)
+{
+    if (!out) {
+        m_private->m_errno = eInvalidParam;
+        return false;
+    }
+    
+    const Value *val = NULL;
+    if (!m_private->get_array_value(idx, &val)) {
+        return false;
+    }
+    
+    if (!val->IsInt64()) {
+        m_private->m_errno = eTypeMissmatch;
+        return false;
+    }
+
+    *out = val->GetInt64();
+    return true;
+}
+
+bool JsonHelper::get(size_t idx, unsigned int *out)
+{
+    if (!out) {
+        m_private->m_errno = eInvalidParam;
+        return false;
+    }
+    
+    const Value *val = NULL;
+    if (!m_private->get_array_value(idx, &val)) {
+        return false;
+    }
+    
+    if (!val->IsUint()) {
+        m_private->m_errno = eTypeMissmatch;
+        return false;
+    }
+
+    *out = val->GetUint();
+    return true;
+}
+
+bool JsonHelper::get(size_t idx, uint64_t *out)
+{
+    if (!out) {
+        m_private->m_errno = eInvalidParam;
+        return false;
+    }
+    
+    const Value *val = NULL;
+    if (!m_private->get_array_value(idx, &val)) {
+        return false;
+    }
+    
+    if (!val->IsUint64()) {
+        m_private->m_errno = eTypeMissmatch;
+        return false;
+    }
+
+    *out = val->GetUint64();
+    return true;
+}
+
+bool JsonHelper::get(size_t idx, float *out)
+{
+    if (!out) {
+        m_private->m_errno = eInvalidParam;
+        return false;
+    }
+    
+    const Value *val = NULL;
+    if (!m_private->get_array_value(idx, &val)) {
+        return false;
+    }
+    
+    if (!val->IsFloat()) {
+        m_private->m_errno = eTypeMissmatch;
+        return false;
+    }
+
+    *out = val->GetFloat();
+    return true;
+}
+
+bool JsonHelper::get(size_t idx, double *out)
+{
+    if (!out) {
+        m_private->m_errno = eInvalidParam;
+        return false;
+    }
+    
+    const Value *val = NULL;
+    if (!m_private->get_array_value(idx, &val)) {
+        return false;
+    }
+    
+    if (!val->IsDouble()) {
+        m_private->m_errno = eTypeMissmatch;
+        return false;
+    }
+
+    *out = val->GetDouble();
+    return true;
+}
+
+
+bool JsonHelper::set(size_t idx, const char *in, bool bCreat)
+{
+    if (!in) {
+        m_private->m_errno = eInvalidParam;
+        return false;
+    }
+    
+    Value *val = NULL;
+    if (!m_private->get_array_value(idx, &val)
+        && !(m_private->m_errno == eOutOfRange 
+                && idx == m_private->m_val->Size()
+                && bCreat)) {
+        return false;
+    }
+    try {
+        if (m_private->m_errno == eNoErr) {
+            if (!val->IsString()) {
+                m_private->m_errno = eTypeMissmatch;
+                return false;
+            }
+            val->SetString(in, strlen(in), m_private->m_allocator);
+        } else if (idx > 0 && !(*m_private->m_val)[0].IsString()) {
+            m_private->m_errno = eTypeMissmatch;
+            return false;
+        } else {
+            Value val_value(kStringType);
+            val_value.SetString(in, strlen(in), m_private->m_allocator);
+            m_private->m_val->PushBack(val_value, m_private->m_allocator);
+        }
+    } catch(...) {
+        m_private->m_errno = eInternalError;
+        return false;
+    }
+    
+    return true;
+}
+
+bool JsonHelper::set(size_t idx, const string &in, bool bCreat)
+{
+    return set(idx, in.c_str(), bCreat);
+}
+
+bool JsonHelper::set(size_t idx, float in, bool bCreat)
+{
+    if (!in) {
+        m_private->m_errno = eInvalidParam;
+        return false;
+    }
+    
+    Value *val = NULL;
+    if (!m_private->get_array_value(idx, &val)
+        && !(m_private->m_errno == eOutOfRange 
+                && idx == m_private->m_val->Size()
+                && bCreat)) {
+        return false;
+    }
+    try {
+        if (m_private->m_errno == eNoErr) {
+            if (!val->IsFloat()) {
+                m_private->m_errno = eTypeMissmatch;
+                return false;
+            }
+            val->SetFloat(in);
+        } else if (idx > 0 && !(*m_private->m_val)[0].IsFloat()) {
+            m_private->m_errno = eTypeMissmatch;
+            return false;
+        } else {
+            m_private->m_val->PushBack(in, m_private->m_allocator);
+        }
+    } catch(...) {
+        m_private->m_errno = eInternalError;
+        return false;
+    }
+    
+    return true;
+}
+
+bool JsonHelper::set(size_t idx, double &in, bool bCreat)
+{
+    if (!in) {
+        m_private->m_errno = eInvalidParam;
+        return false;
+    }
+    
+    Value *val = NULL;
+    if (!m_private->get_array_value(idx, &val)
+        && !(m_private->m_errno == eOutOfRange 
+                && idx == m_private->m_val->Size()
+                && bCreat)) {
+        return false;
+    }
+    try {
+        if (m_private->m_errno == eNoErr) {
+            if (!val->IsDouble()) {
+                m_private->m_errno = eTypeMissmatch;
+                return false;
+            }
+            val->SetDouble(in);
+        } else if (idx > 0 && !(*m_private->m_val)[0].IsDouble()) {
+            m_private->m_errno = eTypeMissmatch;
+            return false;
+        } else {
+            m_private->m_val->PushBack(in, m_private->m_allocator);
+        }
+    } catch(...) {
+        m_private->m_errno = eInternalError;
+        return false;
+    }
+    
+    return true;
+}
+
+bool JsonHelper::set(size_t idx, int in, bool bCreat)
+{
+    if (!in) {
+        m_private->m_errno = eInvalidParam;
+        return false;
+    }
+    
+    Value *val = NULL;
+    if (!m_private->get_array_value(idx, &val)
+        && !(m_private->m_errno == eOutOfRange 
+                && idx == m_private->m_val->Size()
+                && bCreat)) {
+        return false;
+    }
+    try {
+        if (m_private->m_errno == eNoErr) {
+            if (!val->IsInt()) {
+                m_private->m_errno = eTypeMissmatch;
+                return false;
+            }
+            val->SetInt(in);
+        } else if (idx > 0 && !(*m_private->m_val)[0].IsInt()) {
+            m_private->m_errno = eTypeMissmatch;
+            return false;
+        } else {
+            m_private->m_val->PushBack(in, m_private->m_allocator);
+        }
+    } catch(...) {
+        m_private->m_errno = eInternalError;
+        return false;
+    }
+    
+    return true;
+}
+
+bool JsonHelper::set(size_t idx, const int64_t &in, bool bCreat)
+{
+    if (!in) {
+        m_private->m_errno = eInvalidParam;
+        return false;
+    }
+    
+    Value *val = NULL;
+    if (!m_private->get_array_value(idx, &val)
+        && !(m_private->m_errno == eOutOfRange 
+                && idx == m_private->m_val->Size()
+                && bCreat)) {
+        return false;
+    }
+    try {
+        if (m_private->m_errno == eNoErr) {
+            if (!val->IsInt64()) {
+                m_private->m_errno = eTypeMissmatch;
+                return false;
+            }
+            val->SetInt64(in);
+        } else if (idx > 0 && !(*m_private->m_val)[0].IsInt64()) {
+            m_private->m_errno = eTypeMissmatch;
+            return false;
+        } else {
+            m_private->m_val->PushBack(in, m_private->m_allocator);
+        }
+    } catch(...) {
+        m_private->m_errno = eInternalError;
+        return false;
+    }
+    
+    return true;
+}
+
+bool JsonHelper::set(size_t idx, unsigned int in, bool bCreat)
+{
+    if (!in) {
+        m_private->m_errno = eInvalidParam;
+        return false;
+    }
+    
+    Value *val = NULL;
+    if (!m_private->get_array_value(idx, &val)
+        && !(m_private->m_errno == eOutOfRange 
+                && idx == m_private->m_val->Size()
+                && bCreat)) {
+        return false;
+    }
+    try {
+        if (m_private->m_errno == eNoErr) {
+            if (!val->IsUint()) {
+                m_private->m_errno = eTypeMissmatch;
+                return false;
+            }
+            val->SetUint(in);
+        } else if (idx > 0 && !(*m_private->m_val)[0].IsUint()) {
+            m_private->m_errno = eTypeMissmatch;
+            return false;
+        } else {
+            m_private->m_val->PushBack(in, m_private->m_allocator);
+        }
+    } catch(...) {
+        m_private->m_errno = eInternalError;
+        return false;
+    }
+    
+    return true;
+}
+
+bool JsonHelper::set(size_t idx, const uint64_t &in, bool bCreat)
+{
+    if (!in) {
+        m_private->m_errno = eInvalidParam;
+        return false;
+    }
+    
+    Value *val = NULL;
+    if (!m_private->get_array_value(idx, &val)
+        && !(m_private->m_errno == eOutOfRange 
+                && idx == m_private->m_val->Size()
+                && bCreat)) {
+        return false;
+    }
+    try {
+        if (m_private->m_errno == eNoErr) {
+            if (!val->IsUint64()) {
+                m_private->m_errno = eTypeMissmatch;
+                return false;
+            }
+            val->SetUint64(in);
+        } else if (idx > 0 && !(*m_private->m_val)[0].IsUint64()) {
+            m_private->m_errno = eTypeMissmatch;
+            return false;
+        } else {
+            m_private->m_val->PushBack(in, m_private->m_allocator);
+        }
+    } catch(...) {
+        m_private->m_errno = eInternalError;
+        return false;
+    }
+    
+    return true;
+}
+
 
 } // namespace tiny_utils
 #endif  // #if defined(ENABLE_JSON)

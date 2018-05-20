@@ -61,7 +61,7 @@ JSON_REG(get)
         return -1;
     }
 
-    bool ret;
+    bool ret = false;
     Value val;
     
     if (argc < 3 || !strcmp(argv[2], "string")) {
@@ -94,11 +94,11 @@ JSON_REG(set)
     
     if (argc < 4 || !strcmp(argv[3], "string")) {
         ret = js.set(argv[1], argv[2], bCreate);
-    } else if(!strcmp(argv[2], "int")) {
-        int val = atoi(argv[3]);
+    } else if(!strcmp(argv[3], "int")) {
+        int val = atoi(argv[2]);
         ret = js.set(argv[1], val, bCreate);
-    } else if (!strcmp(argv[2], "float")) {
-        float val = strtof(argv[3], NULL);
+    } else if (!strcmp(argv[3], "float")) {
+        float val = strtof(argv[2], NULL);
         ret = js.set(argv[1], val, bCreate);
     }
     
@@ -109,16 +109,17 @@ JSON_REG(set)
     return 0;
 }
 
-JSON_REG(out_obj)
+JSON_REG(out)
 {
-    bool ret = js.out_obj();
+    int step = argc > 1?atoi(argv[1]):1;
+    bool ret = js.out(step);
     if (!ret) {
         JS_ERR("out failed %d", js.get_errno());
     }
     return 0;
 }
 
-JSON_REG(locate_obj)
+JSON_REG(obj)
 {
     if (argc < 2) {
         return -1;
@@ -130,6 +131,75 @@ JSON_REG(locate_obj)
 
     return 0;
 }
+
+JSON_REG(array)
+{
+    if (argc < 2) {
+        return -1;
+    }
+    bool bCreate = argc > 2;
+
+    bool ret = js.locate_array(argv[1], bCreate);
+    JS_VAR(ret?DBG_LV_INF:DBG_LV_ERR, "locate %s %s %d", argv[1], ret?"successfully":"failed", js.get_errno());
+
+    return 0;
+}
+
+JSON_REG(get2)
+{
+    if (argc < 1) {
+        return -1;
+    }
+
+    bool ret = false;
+    Value val;
+    size_t idx = atoi(argv[1]);
+    
+    if (argc < 3 || !strcmp(argv[2], "string")) {
+        val.reset(Value::stringValue);
+        ret = js.get(idx, &val.as_string());
+    } else if(!strcmp(argv[2], "int")) {
+        val.reset(Value::intValue);
+        ret = js.get(idx, &val.as_int());
+    } else if (!strcmp(argv[2], "float")) {
+        val.reset(Value::floatValue);
+        ret = js.get(idx, &val.as_float());
+    }
+    
+    if (!ret) {
+        JS_ERR("get %d failed. errno = %d", idx, js.get_errno());
+        return -1;
+    }
+
+    std::cout << val << std::endl;
+    return 0;
+}
+
+JSON_REG(set2)
+{
+    if (argc < 3) {
+        return -1;
+    }
+    bool bCreate = argc > 3;
+    bool ret = false;
+    size_t idx = atoi(argv[1]);
+    if (argc < 4 || !strcmp(argv[3], "string")) {
+        ret = js.set(idx, argv[2], bCreate);
+    } else if(!strcmp(argv[3], "int")) {
+        int val = atoi(argv[2]);
+        ret = js.set(idx, val, bCreate);
+    } else if (!strcmp(argv[3], "float")) {
+        float val = strtof(argv[2], NULL);
+        ret = js.set(idx, val, bCreate);
+    }
+
+    if (!ret) {
+        JS_ERR("set %d failed. errno = %d", idx, js.get_errno());
+        return -1;
+    }
+    return 0;
+}
+
 
 JSON_REG(locate_path)
 {
@@ -189,5 +259,6 @@ static int do_json(int argc, const char **argv)
 TEST_REG(json)
 {
     start_shell("json>", do_json);
+    return 0;
 }
 #endif  // #if defined(ENABLE_JSON)
