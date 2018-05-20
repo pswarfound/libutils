@@ -200,8 +200,36 @@ JSON_REG(set2)
     return 0;
 }
 
+JSON_REG(obj2)
+{
+    if (argc < 2) {
+        return -1;
+    }
+    size_t idx = atoi(argv[1]);
+    bool bCreate = argc > 2;
 
-JSON_REG(locate_path)
+    bool ret = js.locate_obj(idx, bCreate);
+    JS_VAR(ret?DBG_LV_INF:DBG_LV_ERR, "locate %d %s %d", idx, ret?"successfully":"failed", js.get_errno());
+
+    return 0;
+}
+
+JSON_REG(array2)
+{
+    if (argc < 2) {
+        return -1;
+    }
+    size_t idx = atoi(argv[1]);
+    bool bCreate = argc > 2;
+
+    bool ret = js.locate_array(idx, bCreate);
+    JS_VAR(ret?DBG_LV_INF:DBG_LV_ERR, "locate %d %s %d", idx, ret?"successfully":"failed", js.get_errno());
+
+    return 0;
+}
+
+
+JSON_REG(path)
 {
     if (argc < 2) {
         return -1;
@@ -211,19 +239,7 @@ JSON_REG(locate_path)
 
     return 0;
 }
-#if 0
-JSON_REG(close)
-{
-    if (!js.save_to_file(path.c_str(), false)) {
-        std::cout << __func__ << " " << " failed "
-                << js.get_error()
-                << std::endl;
-        return -1;
-    }
-    return 0;
 
-}
-#endif
 JSON_REG(save)
 {
     if (argc < 2) {

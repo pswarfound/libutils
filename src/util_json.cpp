@@ -942,11 +942,21 @@ bool JsonHelper::out(int step) {
 
         list<string>::iterator iter = path.begin();
         while (iter != path.end()) {
-            if (!locate_obj(iter->c_str()) && !locate_array(iter->c_str())) {
-                m_private->m_track.clear();
-                m_private->m_val = &m_private->m_doc;
-                m_private->m_errno = eNoEntry;
-                return false;
+            if ((*iter)[0] == '\\') {
+                size_t idx = atoi(iter->c_str() + 1);
+                if (!locate_obj(idx) && !locate_array(idx)) {
+                    m_private->m_track.clear();
+                    m_private->m_val = &m_private->m_doc;
+                    m_private->m_errno = eNoEntry;
+                    return false;
+                }                
+            } else {
+                if (!locate_obj(iter->c_str()) && !locate_array(iter->c_str())) {
+                    m_private->m_track.clear();
+                    m_private->m_val = &m_private->m_doc;
+                    m_private->m_errno = eNoEntry;
+                    return false;
+                }
             }
             iter++;
         }
@@ -981,12 +991,14 @@ bool JsonHelper::locate_path(const char *path)
 
     list<string>::const_iterator iter = lst.begin();
     while (iter != lst.end()) {
-        if (!locate_obj(iter->c_str())) {
-            list<string>::const_iterator iter2 = iter;
-            iter2++;
-            if (iter2 == lst.end() && locate_array(iter->c_str())) {
-                return true;
-            } else {
+        if ((*iter)[0] == '\\') {
+            size_t idx = atoi(iter->c_str() + 1);
+            if (!locate_obj(idx) && !locate_array(idx)) {
+                return false;
+            }
+        } else {
+            if (!locate_obj(iter->c_str())
+                && !locate_array(iter->c_str())) {
                 m_private->m_track.clear();
                 m_private->m_val = &m_private->m_doc;
                 m_private->m_errno = eNoEntry;
@@ -1389,6 +1401,78 @@ bool JsonHelper::set(size_t idx, const uint64_t &in, bool bCreat)
             return false;
         } else {
             m_private->m_val->PushBack(in, m_private->m_allocator);
+        }
+    } catch(...) {
+        m_private->m_errno = eInternalError;
+        return false;
+    }
+    
+    return true;
+}
+
+bool JsonHelper::locate_obj(size_t idx, bool bCreat)
+{
+    Value *val = NULL;
+    if (!m_private->get_array_value(idx, &val)
+        && !(m_private->m_errno == eOutOfRange 
+                && idx == m_private->m_val->Size()
+                && bCreat)) {
+        return false;
+    }
+
+    try {
+       if (m_private->m_errno == eNoErr) {
+           if (!val->IsObject()) {
+               m_private->m_errno = eTypeMissmatch;
+               return false;
+           }
+           char buf[32];
+           snprintf(buf, sizeof(buf), "\%d", idx);
+           m_private->m_val = val;
+           m_private->m_track.push_back(buf);
+       } else if (idx > 0 && !(*m_private->m_val)[0].IsObject()) {
+           m_private->m_errno = eTypeMissmatch;
+           return false;
+       } else {
+           Value obj(kObjectType);
+           m_private->m_val->PushBack(obj, m_private->m_allocator);
+           return locate_obj(idx);
+       }
+   } catch(...) {
+       m_private->m_errno = eInternalError;
+       return false;
+   }
+   
+   return true;
+}
+
+bool JsonHelper::locate_array(size_t idx, bool bCreat)
+{
+     Value *val = NULL;
+     if (!m_private->get_array_value(idx, &val)
+         && !(m_private->m_errno == eOutOfRange 
+                 && idx == m_private->m_val->Size()
+                 && bCreat)) {
+         return false;
+     }
+    
+     try {
+        if (m_private->m_errno == eNoErr) {
+            if (!val->IsArray()) {
+                m_private->m_errno = eTypeMissmatch;
+                return false;
+            }
+            char buf[32];
+            snprintf(buf, sizeof(buf), "\%d", idx);
+            m_private->m_val = val;
+            m_private->m_track.push_back(buf);
+        } else if (idx > 0 && !(*m_private->m_val)[0].IsArray()) {
+            m_private->m_errno = eTypeMissmatch;
+            return false;
+        } else {
+            Value obj(kArrayType);
+            m_private->m_val->PushBack(obj, m_private->m_allocator);
+            return locate_obj(idx);
         }
     } catch(...) {
         m_private->m_errno = eInternalError;

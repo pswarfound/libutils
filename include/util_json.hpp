@@ -74,8 +74,8 @@ class JsonHelper
     bool set(size_t idx, unsigned int val, bool bCreat = false);
     bool set(size_t idx, const uint64_t &val, bool bCreat = false);
     
- //   bool locate_obj(size_t idx, bool bCreat = false);
-   // bool locate_array(size_t idx, bool bCreat = false);
+    bool locate_obj(size_t idx, bool bCreat = false);
+    bool locate_array(size_t idx, bool bCreat = false);
 
     #if 0
     bool get(size_t idx, string &sval);    
