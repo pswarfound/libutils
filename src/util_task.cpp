@@ -2,7 +2,7 @@
 #include <errno.h>
 #include <string.h>
 #include <unistd.h>
-#include "util_debug.h"
+#include "util_debug.hpp"
 #include "util_mutex.hpp"
 #include "util_task.hpp"
 

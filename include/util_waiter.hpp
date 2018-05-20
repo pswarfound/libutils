@@ -1,5 +1,5 @@
 #pragma once
-#include "noncopyable.hpp"
+#include "util_noncopyable.hpp"
 
 namespace tiny_utils {
 class WaiterPrivate;

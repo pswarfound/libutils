@@ -1,18 +1,14 @@
 #include <pthread.h>
-#include "util_debug.h"
 #include "util_mutex.hpp"
 
 namespace tiny_utils {
 
-class MutexPrivate
-{
+class MutexImpl {
  public:
-    MutexPrivate()
-    {
+    MutexImpl() {
         pthread_mutex_init(&m_mtx, NULL);
     }
-    ~MutexPrivate()
-    {
+    ~MutexImpl() {
         pthread_mutex_destroy(&m_mtx);
     }
  private:
@@ -22,36 +18,35 @@ class MutexPrivate
 };
 
 Mutex::Mutex()
-    : m_private(new MutexPrivate)
-{
+    : m_private(new MutexImpl) {
 }
 
-Mutex::~Mutex()
-{
+Mutex::~Mutex() {
+    if (m_private) {
+        delete m_private;
+    }
 }
 
-bool Mutex::lock()
-{
+bool Mutex::lock() {
     if (!m_private) {
         return false;
     }
     
-    int ret = pthread_mutex_lock(&m_private->m_mtx);
-    if (ret) {
+    int err_no = pthread_mutex_lock(&m_private->m_mtx);
+    if (err_no) {
         return false;
     }
 
     return true;
 }
 
-bool Mutex::unlock()
-{
+bool Mutex::unlock() {
     if (!m_private) {
         return false;
     }
 
-    int ret = pthread_mutex_unlock(&m_private->m_mtx);
-    if (ret) {
+    int err_no = pthread_mutex_unlock(&m_private->m_mtx);
+    if (err_no) {
         return false;
     }
 

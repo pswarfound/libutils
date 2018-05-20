@@ -6,9 +6,9 @@
 #include <sstream>
 #include "callback_test.h"
 #include "util_json.hpp"
-#include "util_debug.h"
+#include "util_debug.hpp"
 #include "util_misc.hpp"
-#include "util_shell.hpp"
+//#include "util_shell.hpp"
 
 using namespace tiny_utils;
 using namespace std;
@@ -165,5 +165,5 @@ static int do_json(int argc, const char **argv)
 
 TEST_REG(json)
 {
-    start_shell("json", do_json);
+//    start_shell("json", do_json);
 }

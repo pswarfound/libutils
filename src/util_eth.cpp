@@ -22,7 +22,7 @@
 #include <list>
 #include <string>
 #include "util_eth.hpp"
-#include "util_debug.h"
+#include "util_debug.hpp"
 #include "util_file.hpp"
 
 bool is_loopback(const string &ip)

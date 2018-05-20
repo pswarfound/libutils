@@ -1,6 +1,6 @@
 #include <string>
 #include "util_ini.hpp"
-#include "util_debug.h"
+#include "util_debug.hpp"
 #include "libini.h"
 
 using std::string;
