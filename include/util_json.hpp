@@ -29,6 +29,7 @@ class JsonHelper
     bool load_from_data(const char *data);
     bool save_to_file(const char *path, bool bPretty = true);
     bool get_doc(string &, bool bPretty = true);
+    bool clear(void);
     int get_errno(void);
     const string &get_error() const;
 
@@ -52,7 +53,6 @@ class JsonHelper
 
     bool locate_obj(const char *key, bool bCreat = false);
     bool locate_array(const char *key, bool bCreat = false);
-    bool locate_path(const char *path);
     bool out(int step = 1);
 
 
@@ -77,24 +77,8 @@ class JsonHelper
     bool locate_obj(size_t idx, bool bCreat = false);
     bool locate_array(size_t idx, bool bCreat = false);
 
-    #if 0
-    bool get(size_t idx, string &sval);    
-    bool get(size_t idx, int &ival);    
-    bool get(size_t idx, float &fval);    
-    bool set(size_t idx, const char *sval);
-    bool set(size_t idx, int ival);
-    bool set(size_t idx, float fval);
-    
-    bool add_string(const char *sval);
-    bool add_int(int ival);
-    bool add_float(float fval);
-    bool add_obj(int &idx);
-    bool add_array(int &idx);
-    bool locate_obj(size_t idx);
-    bool locate_array(size_t idxe);
-    int size(); 
-     bool clear();  
-   #endif
+    bool direct(const char *path);
+
  private:
     JsonImpl *m_private;
 };

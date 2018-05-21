@@ -229,12 +229,12 @@ JSON_REG(array2)
 }
 
 
-JSON_REG(path)
+JSON_REG(direct)
 {
     if (argc < 2) {
         return -1;
     }
-    bool ret = js.locate_path(argv[1]);
+    bool ret = js.direct(argv[1]);
     JS_VAR(ret?DBG_LV_INF:DBG_LV_ERR, "locate %s %s %d", argv[1], ret?"successfully":"failed", js.get_errno());
 
     return 0;

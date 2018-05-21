@@ -230,6 +230,17 @@ bool JsonHelper::save_to_file(const char *path, bool bPretty) {
     return true;
 }
 
+bool JsonHelper::clear() {
+    try {
+        m_private->m_doc.SetObject();
+        m_private->m_val = &m_private->m_doc;
+        m_private->m_track.clear();
+    } catch(...) {
+        return false;
+    }
+    return true;
+}
+
 bool JsonHelper::get(const char *key, string *out) {
     if (!key || !out) {
         m_private->m_errno = eInvalidParam;
@@ -364,18 +375,6 @@ bool JsonHelper::get(const char *key, uint64_t *out) {
     
     return true;
 }
-#if 0
-bool JsonHelper::clear() {
-    try {
-        m_private->m_doc.SetObject();
-        m_private->m_val = &m_private->m_doc;
-        m_private->m_track.clear();
-        m_private->m_track.push_back(m_private->m_val);
-    } catch(...) {
-        return false;
-    }
-}
-#endif
 
 bool JsonHelper::set(const char *key, const char *in, bool bCreat) {
     if (!key || !in) {
@@ -691,231 +690,6 @@ bool JsonHelper::locate_array(const char *key, bool bCreat) {
 
 }
 
-#if 0
-int JsonHelper::size() {
-    try {
-        if (m_private->m_val) {
-            if (m_private->m_val->IsArray()) {
-                return m_private->m_val->Size();
-            } else if (m_private->m_val->IsObject()) {
-
-                return m_private->m_val->MemberCount();
-            }
-        }
-    } catch(...) {
-    }
-    return 0;
-}
-#endif
-#if 0
-bool JsonHelper::get_array_float(size_t idx, float &fval) {
-    try {
-        if (m_private->m_val && m_private->m_val->IsArray() && idx < m_private->m_val->Size()) {
-            if ((*m_private->m_val)[idx].IsFloat()) {
-                fval = (*m_private->m_val)[idx].GetFloat();
-                return true;
-            }
-        }
-    } catch(...) {
-    }
-    return false;
-}
-
-bool JsonHelper::get_array_string(size_t idx, string &fval) {
-    try {
-        if (m_private->m_val && m_private->m_val->IsArray() && idx < m_private->m_val->Size()) {
-            if ((*m_private->m_val)[idx].IsString()) {
-                fval = (*m_private->m_val)[idx].GetString();
-                return true;
-            }
-        }
-    } catch(...) {
-    }
-    return false;
-}
-
-bool JsonHelper::get_array_int(size_t idx, int &fval) {
-    try {
-        if (m_private->m_val && m_private->m_val->IsArray() && idx < m_private->m_val->Size()) {
-            if ((*m_private->m_val)[idx].IsInt()) {
-                fval = (*m_private->m_val)[idx].GetInt();
-                return true;
-            }
-        }
-    } catch(...) {
-    }
-    return false;
-}
-
-bool JsonHelper::set_array_string(size_t idx, const char *sval) {
-    try {
-        if (m_private->m_val && m_private->m_val->IsArray() && idx < m_private->m_val->Size()) {
-            if ((*m_private->m_val)[idx].IsString()) {
-                (*m_private->m_val)[idx].SetString(sval, strlen(sval), m_private->m_allocator);
-                return true;
-            }
-        }
-    } catch(...) {
-    }
-    return false;
-}
-
-bool JsonHelper::set_array_int(size_t idx, int ival) {
-    try {
-        if (m_private->m_val && m_private->m_val->IsArray() && idx < m_private->m_val->Size()) {
-            if ((*m_private->m_val)[idx].IsInt()) {
-                (*m_private->m_val)[idx].SetInt(ival);
-                return true;
-            }
-        }
-    } catch(...) {
-    }
-    return false;
-}
-
-bool JsonHelper::set_array_float(size_t idx,  float fval) {
-    try {
-        if (m_private->m_val && m_private->m_val->IsArray() && idx < m_private->m_val->Size()) {
-            if ((*m_private->m_val)[idx].IsFloat()) {
-                (*m_private->m_val)[idx].SetFloat(fval);
-                return true;
-            }
-        }
-    } catch(...) {
-    }
-    return false;
-
-}
-
-bool JsonHelper::locate_array_obj(size_t idx) {
-    try {
-        if (m_private->m_val && m_private->m_val->IsArray() && idx < m_private->m_val->Size()) {
-            if ((*m_private->m_val)[idx].IsObject()) {
-                m_private->m_val = &(*m_private->m_val)[idx];
-                m_private->m_track.push_back(m_private->m_val);
-                return true;
-            }
-        }
-    } catch(...) {
-    }
-    return false;
-}
-
-bool JsonHelper::locate_array_array(size_t idx) {
-    try {
-        if (m_private->m_val && m_private->m_val->IsArray() && idx < m_private->m_val->Size()) {
-            if ((*m_private->m_val)[idx].IsArray()) {
-                m_private->m_val = &(*m_private->m_val)[idx];
-                m_private->m_track.push_back(m_private->m_val);
-                return true;
-            }
-        }
-    } catch(...) {
-    }
-    return false;
-}
-
-bool JsonHelper::add_array_string(const char *sval) {
-    try {
-        if (m_private->m_val && m_private->m_val->IsArray()) {
-            if (!m_private->m_val->Empty() && !(*m_private->m_val)[0].IsString()) {
-                return false;
-            }
-            Value val_value(kStringType);
-            val_value.SetString(sval, strlen(sval), m_private->m_allocator);
-            m_private->m_val->PushBack(val_value, m_private->m_allocator);
-        }
-    } catch(...) {
-    }
-    return false;
-}
-
-bool JsonHelper::add_array_int(int ival) {
-    try {
-        if (m_private->m_val && m_private->m_val->IsArray()) {
-            if (!m_private->m_val->Empty() && !(*m_private->m_val)[0].IsInt()) {
-                return false;
-            }
-            m_private->m_val->PushBack(ival, m_private->m_allocator);
-        }
-    } catch(...) {
-    }
-    return false;
-}
-
-bool JsonHelper::add_array_float(float fval) {
-    try {
-        if (m_private->m_val && m_private->m_val->IsArray()) {
-            if (!m_private->m_val->Empty() && !(*m_private->m_val)[0].IsFloat()) {
-                return false;
-            }
-            m_private->m_val->PushBack(fval, m_private->m_allocator);
-        }
-    } catch(...) {
-    }
-    return false;
-}
-
-bool JsonHelper::add_array_array(int &idx) {
-    try {
-        if (m_private->m_val && m_private->m_val->IsArray()) {
-            if (!m_private->m_val->Empty() && !(*m_private->m_val)[0].IsArray()) {
-                return false;
-            }
-            Value val(kArrayType);
-            m_private->m_val->PushBack(val, m_private->m_allocator);
-            idx = m_private->m_val->Size() - 1;
-        }
-    } catch(...) {
-    }
-    return false;
-}
-
-bool JsonHelper::add_array_object(int &idx) {
-    try {
-        if (m_private->m_val && m_private->m_val->IsArray()) {
-            if (!m_private->m_val->Empty() && !(*m_private->m_val)[0].IsObject()) {
-                return false;
-            }
-            Value val(kObjectType);
-            m_private->m_val->PushBack(val, m_private->m_allocator);
-            idx = m_private->m_val->Size() - 1;
-        }
-    } catch(...) {
-    }
-    return false;
-}
-
-bool JsonHelper::add_into_array() {
-    try {
-        if (m_private->m_val && m_private->m_val->IsArray()) {
-            if (!m_private->m_val->Empty() && !(*m_private->m_val)[0].IsArray()) {
-                return false;
-            }
-            Value val(kArrayType);
-            m_private->m_val->PushBack(val, m_private->m_allocator);
-            m_private->m_track.push_back(m_private->m_val);
-        }
-    } catch(...) {
-    }
-    return false;
-}
-
-bool JsonHelper::add_into_obj() {
-    try {
-        if (m_private->m_val && m_private->m_val->IsArray()) {
-            if (!m_private->m_val->Empty() && !(*m_private->m_val)[0].IsObject()) {
-                return false;
-            }
-            Value val(kObjectType);
-            m_private->m_val->PushBack(val, m_private->m_allocator);
-            m_private->m_track.push_back(m_private->m_val);
-        }
-    } catch(...) {
-    }
-    return false;
-}
-#endif
 bool JsonHelper::out(int step) {
     if (step <=0) {
         m_private->m_errno = eInvalidParam;
@@ -974,7 +748,7 @@ static bool parse_path(const char *path, list<string> &lst)
     return true;
 }
 
-bool JsonHelper::locate_path(const char *path)
+bool JsonHelper::direct(const char *path)
 {
     list<string> lst;
 
