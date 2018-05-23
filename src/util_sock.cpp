@@ -21,7 +21,7 @@
 #include <string>
 #include "util_eth.hpp"
 #include "util_sock.hpp"
-#include "util_debug.h"
+#include "util_debug.hpp"
 
 BaseSock::BaseSock(int domain, int type, int protocol)
     : m_type(type), m_domain(domain), m_protocol(protocol),

@@ -1,14 +1,10 @@
 #pragma once
-#include "noncopyable.hpp"
-#include <tr1/memory>
-
-using std::tr1::shared_ptr;
+#include "util_noncopyable.hpp"
 
 namespace tiny_utils {
-class MutexPrivate;
+class MutexImpl;
 
-class Mutex    : public noncopyable
-{
+class Mutex    : public noncopyable {
  public:
     Mutex();
     ~Mutex();
@@ -17,26 +13,22 @@ class Mutex    : public noncopyable
     bool lock();
     bool unlock();
  private:
-    friend class Condition;    
+    friend class Condition;
     void *get_lock();
-    shared_ptr<MutexPrivate> m_private;
+    MutexImpl *m_private;
 };
 
-class MutexGuard       : public noncopyable
-{
+class MutexGuard       : public noncopyable {
  public:
     explicit MutexGuard(Mutex &mtx)
-        : m_mtx(mtx)
-    {
+        : m_mtx(mtx) {
         m_mtx.lock();
     }
-    ~MutexGuard()
-    {
+    ~MutexGuard() {
         m_mtx.unlock();
     }
  private:
     Mutex &m_mtx;
 };
-
-}// namespace tiny_utils
+}  // namespace tiny_utils
 

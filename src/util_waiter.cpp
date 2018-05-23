@@ -1,7 +1,7 @@
 #include "util_waiter.hpp"
 #include "util_mutex.hpp"
 #include "util_cond.hpp"
-#include "util_debug.h"
+#include "util_debug.hpp"
 
 namespace tiny_utils {
 

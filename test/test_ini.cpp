@@ -7,9 +7,9 @@
 
 #include "callback_test.h"
 #include "util_ini.hpp"
-#include "util_debug.h"
+#include "util_debug.hpp"
 #include "util_misc.hpp"
-#include "util_shell.hpp"
+//#include "util_shell.hpp"
 
 using namespace tiny_utils;
 using namespace std;
@@ -85,7 +85,7 @@ static int do_ini(int argc, const char **argv)
 
 TEST_REG(ini)
 {
-    start_shell("ini>", do_ini);
+//    start_shell("ini>", do_ini);
 
     return 0;
 }

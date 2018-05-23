@@ -18,7 +18,7 @@
 #include <netinet/in.h>
 
 #include "callback_test.h"
-#include "util_debug.h"
+#include "util_debug.hpp"
 #include "util_sock.hpp"
 
 typedef struct {

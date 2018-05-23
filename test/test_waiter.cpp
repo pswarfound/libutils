@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include "callback_test.h"
 #include "util_waiter.hpp"
-#include "util_debug.h"
+#include "util_debug.hpp"
 #include "util_task.hpp"
 
 using namespace tiny_utils;
