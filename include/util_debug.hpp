@@ -7,7 +7,6 @@ typedef enum {
     DBG_LV_WARN,
     DBG_LV_ERR,
     DBG_LV_FATAL,
-    DBG_LV_MAX
 } dbg_level_e;
 
 typedef enum {
@@ -39,10 +38,11 @@ typedef enum {
 #define ERR(module, ...)    util_dbg_print(DBG_LV_ERR, module, __FILE__, __func__, __LINE__, __VA_ARGS__)
 #define FTL(module, ...)    util_dbg_print(DBG_LV_FATAL, module, __FILE__, __func__, __LINE__, __VA_ARGS__)
 
-void util_dbg_set(unsigned char lv, unsigned short inf);
-void util_dbg_set_color(unsigned char lv, dbg_color_e coloe);
+int util_dbg_set_detail(unsigned char lv, unsigned short inf);
+unsigned short util_dbg_get_detail(unsigned char lv);
+int util_dbg_set_color(unsigned char lv, dbg_color_e color);
 
-void util_dbg_print(
+int util_dbg_print(
     unsigned char lv,
     const char *module,
     const char *file,

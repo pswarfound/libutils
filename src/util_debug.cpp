@@ -2,10 +2,11 @@
 #include <time.h>
 #include <string.h>
 #include <stdio.h>
+#include <errno.h>
 #include "util_debug.hpp"
 
 #define DBG_MAX_LINE_LEN    1024
-#define DBG_INF_ALL 0xFF
+#define DBG_INF_ALL 0xFFFF
 
 namespace tiny_utils {
 
@@ -15,42 +16,58 @@ typedef struct {
     dbg_color_e color;
 }dbg_info_t;
 
-static dbg_info_t *get_dbg_info(void)
+static dbg_info_t *get_dbg_info(unsigned char lv)
 {
     static dbg_info_t info[] = {
-            {DBG_INF_ALL, "DBG", DBG_COLOR_DEFAULT},  // DBG_LV_DBG
-            {DBG_INF_ALL, "INF", DBG_COLOR_GREEN},  // DBG_LV_INF
-            {DBG_INF_ALL, "WRN", DBG_COLOR_YELLOW},  // DBG_LV_WARN
-            {DBG_INF_ALL, "ERR", DBG_COLOR_RED},  // DBG_LV_ERR
-            {DBG_INF_ALL, "FTL", DBG_COLOR_RED},  // DBG_LV_FATAL
+            // DBG_LV_DBG
+            {DBG_INF_ALL, "DBG", DBG_COLOR_DEFAULT},
+            // DBG_LV_INF
+            {DBG_INF_ALL, "INF", DBG_COLOR_GREEN}, 
+            // DBG_LV_WARN
+            {DBG_INF_ALL, "WRN", DBG_COLOR_YELLOW},
+            // DBG_LV_ERR
+            {DBG_INF_ALL, "ERR", DBG_COLOR_RED}, 
+            // DBG_LV_FATAL
+            {DBG_INF_ALL, "FTL", DBG_COLOR_PURPLE},
     };
 
-    return info;
-}
-
-void util_dbg_set(unsigned char lv, unsigned short inf)
-{
-    if (lv > DBG_LV_MAX) {
-        return;
+    if (lv > DBG_LV_FATAL) {
+        return NULL;
     }
-    dbg_info_t *info = get_dbg_info();
-    info[lv].detail = inf;
+
+    return &info[lv];
 }
 
-void util_dbg_set_color(unsigned char lv, dbg_color_e coloe)
+int util_dbg_set_detail(unsigned char lv, unsigned short inf)
 {
-}
+    dbg_info_t *info = get_dbg_info(lv);
 
-unsigned short util_dbg_get(unsigned char lv)
-{
-    if (lv > DBG_LV_MAX) {
-        return 0;
+    if (!info) {
+        return -1;
     }
-    dbg_info_t *info = get_dbg_info();
-    return info[lv].detail;
+    info->detail = inf;
+    return 0;
 }
 
-void util_dbg_print(
+unsigned short util_dbg_get_detail(unsigned char lv)
+{
+    dbg_info_t *info = get_dbg_info(lv);
+    return info?info->detail:0;
+}
+
+int util_dbg_set_color(unsigned char lv, dbg_color_e color)
+{
+    dbg_info_t *info = get_dbg_info(lv);
+
+    if (!info || color < DBG_COLOR_DEFAULT 
+        || color > DBG_COLOR_WHITE) {
+        return EINVAL;
+    }
+    info->color = color;
+    return 0;
+}
+
+int util_dbg_print(
     unsigned char lv,
     const char *module,
     const char *file,
@@ -58,89 +75,124 @@ void util_dbg_print(
     int line,
     const char *fmt, ...)
 {
-    const dbg_info_t *info = get_dbg_info();
+    bool is_truncate = false;
+    const dbg_info_t *info = get_dbg_info(lv);
     char buf[DBG_MAX_LINE_LEN] = {0};
     char *p = buf;
-    int offset = 0, left = DBG_MAX_LINE_LEN - 20;
+    int offset = 0, left = DBG_MAX_LINE_LEN - 30;
     
     if (!info) {
-        return;
+        return -1;
     }
 
-    info =  &info[lv];
-
+    // current level is disabled
     if ((info->detail & DBG_INF_INFO) == 0) {
-        return;
+        return 0;
     }
 
     if (info->color >= 0) {
-        offset = snprintf(p, left, "\033[%d;%dm", info->color + 30, 40);
+        offset = snprintf(p, sizeof(buf), "\033[%d;%dm", info->color + 30, 40);
         p += offset;
-        left -= offset;
     }
     
-    offset = snprintf(p, left, "[%s ", info->prefix);
+    offset = snprintf(p, sizeof(buf), "[%s ", info->prefix);
     p += offset;
-    left -= offset;
-    
-    if (info->detail & (DBG_INF_DATE | DBG_INF_TIME)) {
-        struct tm tm;
-        time_t tp = time(NULL);
-        localtime_r(&tp, &tm);
-        if (info->detail & DBG_INF_DATE) {
-            offset = snprintf(p, left, "%04d-%02d-%02d ", tm.tm_year + 1900,
-                                                    tm.tm_mon + 1, tm.tm_mday);
+    do {
+        if (info->detail & (DBG_INF_DATE | DBG_INF_TIME)) {
+            struct tm tm;
+            time_t tp = time(NULL);
+            localtime_r(&tp, &tm);
+            if (info->detail & DBG_INF_DATE) {
+                offset = snprintf(p, left, "%04d-%02d-%02d ", tm.tm_year + 1900,
+                                                        tm.tm_mon + 1, tm.tm_mday);
+                if (offset >= left) {
+                    p += left;
+                    left = 0;
+                    break;
+                }
+                p += offset;
+                left -= offset;
+            }
+            if (info->detail & DBG_INF_TIME) {
+                offset = snprintf(p, left, "%02d:%02d:%02d ", tm.tm_hour, tm.tm_min, tm.tm_sec);
+                if (offset >= left) {
+                    p += left;
+                    left = 0;
+                    break;
+                }
+                p += offset;
+                left -= offset;
+            }
+        }
+
+        if (info->detail & DBG_INF_MODULE && module) {
+            offset = snprintf(p, left, "%s ", module);
+            if (offset >= left) {
+                p += left;
+                left = 0;
+                break;
+            }
             p += offset;
             left -= offset;
         }
-        if (info->detail & DBG_INF_TIME) {
-            offset = snprintf(p, left, "%02d:%02d:%02d ", tm.tm_hour, tm.tm_min, tm.tm_sec);
+        
+        if (info->detail & DBG_INF_FILE && file) {
+            offset = snprintf(p, left, "%s ", file);
+            if (offset >= left) {
+                p += left;
+                left = 0;
+                break;
+            }
             p += offset;
             left -= offset;
         }
-    }
-
-    if (info->detail & DBG_INF_MODULE && module) {
-        offset = snprintf(p, left, "%s ", module);
-        p += offset;
-        left -= offset;
-    }
-    
-    if (info->detail & DBG_INF_FILE && file) {
-        offset = snprintf(p, left, "%s ", file);
-        p += offset;
-        left -= offset;
-    }
-    
-    if (info->detail & DBG_INF_FUNC && func) {
-        offset = snprintf(p, left, "%s ", func);
-        p += offset;
-        left -= offset;
-    }
-    if (info->detail & DBG_INF_LINE) {
-        offset = snprintf(p, left, "%d ", line);
-        p += offset;
-        left -= offset;
-    }
-    
-    offset = snprintf(p, left, "] ");
+        
+        if (info->detail & DBG_INF_FUNC && func) {
+            offset = snprintf(p, left, "%s ", func);
+            if (offset >= left) {
+                p += left;
+                left = 0;
+                break;
+            }
+            p += offset;
+            left -= offset;
+        }
+        if (info->detail & DBG_INF_LINE) {
+            offset = snprintf(p, left, "%d ", line);
+            if (offset >= left) {
+                p += left;
+                left = 0;
+                break;
+            }
+            p += offset;
+            left -= offset;
+        }
+    } while(0);
+     
+    offset = snprintf(p, sizeof(buf), "] ");
     p += offset;
-    left -= offset;
-
-    va_list ap;
-    va_start(ap, fmt);
-    offset = vsnprintf(p, left, fmt, ap);
-    va_end(ap);    
-    p += offset;
-
+    do {
+        va_list ap;
+        va_start(ap, fmt);
+        offset = vsnprintf(p, left, fmt, ap);
+        va_end(ap);
+        if (offset >= left) {
+            p += left;
+            left = 0;
+            break;
+        }
+        p += offset;
+    } while(0);
+    is_truncate = left == 0;
+    
     if (info->color >= 0) {
-        offset = snprintf(p, left, "\033[0m");
+        offset = snprintf(p, sizeof(buf), "\033[0m");
         p += offset;
-        left -= offset;
     }
     
    *p++ = '\n';
     fwrite(buf, p - buf, 1, stdout);
     fflush(stdout);
+    return (int)is_truncate;
 }
 }  // namespace tiny_utils

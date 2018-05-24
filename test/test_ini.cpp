@@ -10,6 +10,7 @@
 #include "util_debug.hpp"
 #include "util_misc.hpp"
 #include "util_shell.hpp"
+#include "util_value.hpp"
 
 using namespace tiny_utils;
 using namespace std;
@@ -54,15 +55,37 @@ INI_REG(read)
     }
     string section = argv[1];
     string key = argv[2];
+    string type = "string";
 
-    string value;
-
-    if (!ini.read_string(section, key, &value)) {
-        return -1;
+    if (argc > 3) {
+        type = argv[3];
+    }
+    Value val;
+    bool ret = false;
+    if (type == "string") {
+        string sval;
+        ret = ini.read(section, key, &val.val_string());
+        val = sval;
+    } else if (type == "int") {
+        int ival;
+        ret = ini.read(section, key, &ival);
+        val = ival;
+    } else if (type == "long") {
+        int64_t lval;
+        ret = ini.read(section, key, &lval);
+        val = lval;
+    } else if (type == "float") {
+        float fval;
+        ret = ini.read(section, key, &fval);
+        val = fval;
+    } else if (type == "double") {
+        double dval;
+        ret = ini.read(section, key, &dval);
+        val = dval;
     }
     std::cout << "read section " << section
                 << " key " << key
-                << " value=" << value
+                << " value=" << val
                 << std::endl;
     return 0;
 }

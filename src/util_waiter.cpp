@@ -27,7 +27,7 @@ Waiter::Waiter()
 }
 
 Waiter::~Waiter()
-{
+{
     if (m_private) {
         delete m_private;
     }
