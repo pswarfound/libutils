@@ -27,7 +27,6 @@ class JsonImpl {
             m_allocator(m_doc.GetAllocator()),
             m_val(&m_doc) 
     {
-        m_track.push_back(m_val);
     }
     ~JsonImpl()
     {
@@ -35,9 +34,10 @@ class JsonImpl {
     }
 
     bool get_obj_value(const char *key, const Value **val);
+    bool get_obj_value(const char *key, Value **val);
     int m_errno;
     string m_errs;
-    list<Value *> m_track;
+    list<string> m_track;
     Document m_doc;
     Document::AllocatorType& m_allocator;
     Value   *m_val;
@@ -74,6 +74,32 @@ bool JsonImpl::get_obj_value(const char *key, const Value **val)
     return false;
 }
 
+bool JsonImpl::get_obj_value(const char *key,  Value **val)
+{
+     if (!key || !m_val) {
+        m_errno = JsonHelper::eInvalidParam;
+        return false;
+    }
+    
+    m_errno = kParseErrorNone;
+    try {
+        if (m_val->IsObject()) {
+            Value::MemberIterator itr = m_val->FindMember(key); 
+            if (itr != m_val->MemberEnd()) {
+                *val = &(itr->value);
+                return true;
+            } else {
+                m_errno = JsonHelper::eNoEntry;
+            }
+        } else {
+            m_errno = JsonHelper::eNotObject;
+        }
+    } catch(...) {
+        m_errno = JsonHelper::eInternalError;
+    }
+    return false;
+}
+
 JsonHelper::JsonHelper()
     : m_private(new JsonImpl)
 {
@@ -87,8 +113,10 @@ JsonHelper::~JsonHelper()
 }
 
 bool JsonHelper::load_from_file(const char *path) {
+    m_private->m_errno = eNoErr;
+
     if (!path) {
-        m_private->m_errno = JsonHelper::eInvalidParam;
+        m_private->m_errno = eInvalidParam;
         return false;
     }
     
@@ -101,7 +129,7 @@ bool JsonHelper::load_from_file(const char *path) {
             return false;
         }
     } catch(...) {
-        m_private->m_errno = JsonHelper::eInternalError;
+        m_private->m_errno = eInternalError;
         return false;
     }
 
@@ -154,6 +182,21 @@ const string &JsonHelper::get_error() const
 {
     return m_private->m_errs;
 };
+
+bool JsonHelper::current(string &key)
+{
+    if (!m_private->m_val) {
+       m_private->m_errno = eInternalError;
+       return false;
+    }
+    
+    if (!m_private->m_val->IsObject()) {
+        m_private->m_errno = eTypeMissmatch;
+        return false;
+    }
+    //key = m_private->m_val->name;
+    return true;
+}
 
 bool JsonHelper::save_to_file(const char *path, bool bPretty) {
     try {
@@ -321,95 +364,286 @@ bool JsonHelper::clear() {
         return false;
     }
 }
-bool JsonHelper::set(const char *key, const char *val, bool bCreat) {
-    try {        
-        if (key && val && m_private->m_val && m_private->m_val->IsObject()) {
-            Value::MemberIterator itr = m_private->m_val->FindMember(key); 
-            if (itr != m_private->m_val->MemberEnd()) {
-                if (itr->value.IsString()) {
-                    itr->value.SetString(val, strlen(val), m_private->m_allocator);
-                    return true;
-                }
-            } else if (bCreat) {
-                Value val_key(kStringType), val_value(kStringType);
-                val_key.SetString(key, strlen(key), m_private->m_allocator);
-                val_value.SetString(val, strlen(val), m_private->m_allocator);
-                m_private->m_val->AddMember(val_key, val_value, m_private->m_allocator);
-                return true;
+#endif
+
+bool JsonHelper::set(const char *key, const char *in, bool bCreat) {
+    if (!key || !in) {
+        m_private->m_errno = eInvalidParam;
+        return false;
+    }
+
+    Value *val = NULL;
+    if (((!m_private->get_obj_value(key, &val) || val == NULL)
+        && m_private->m_errno != eNoEntry)
+        || (m_private->m_errno == eNoEntry && !bCreat)) {
+        return false;
+    }
+    try {
+        if (m_private->m_errno == eNoErr) {
+            if (!val->IsString()) {
+                m_private->m_errno = eTypeMissmatch;
+                return false;
             }
+            
+            val->SetString(in, strlen(in), m_private->m_allocator);
+        } else {
+            // no entry, create one
+            Value val_key(kStringType), val_value(kStringType);
+            val_key.SetString(key, strlen(key), m_private->m_allocator);
+            val_value.SetString(in, strlen(in), m_private->m_allocator);
+            m_private->m_val->AddMember(val_key, val_value, m_private->m_allocator);
         }
     } catch(...) {
-        CATCH_ERROR;
+        m_private->m_errno = eInternalError;
+       return false;
     }
-    return false;
+    
+    return true;
 }
 
-bool JsonHelper::set(const char *key, int val, bool bCreat) {
-    try {        
-        if (key && m_private->m_val && m_private->m_val->IsObject()) {
-            Value::MemberIterator itr = m_private->m_val->FindMember(key); 
-            if (itr != m_private->m_val->MemberEnd()) {
-                if (itr->value.IsInt()) {
-                    itr->value.SetInt(val);
-                    return true;
-                }
-            } else if (bCreat) {
-                Value val_key(kStringType);
-                val_key.SetString(key, strlen(key), m_private->m_allocator);
-                m_private->m_val->AddMember(val_key, val, m_private->m_allocator);
-                return true;
-            }
-        }
-    } catch(...) {
-        CATCH_ERROR;
-    }
-    return false;
+bool JsonHelper::set(const char *key, const string &in, bool bCreat) {
+    return set(key, in.c_str(), bCreat);
 }
 
-bool JsonHelper::set(const char *key, float fval, bool bCreat) {
-    try {        
-        if (key && m_private->m_val && m_private->m_val->IsObject()) {
-            Value::MemberIterator itr = m_private->m_val->FindMember(key); 
-            if (itr != m_private->m_val->MemberEnd()) {
-                if (itr->value.IsFloat()) {
-                    itr->value.SetFloat(fval);
-                    return true;
-                }
-            } else if (bCreat) {
-                Value val_key(kStringType);
-                val_key.SetString(key, strlen(key), m_private->m_allocator);
-                m_private->m_val->AddMember(val_key, fval, m_private->m_allocator);
-                return true;
+bool JsonHelper::set(const char *key, int in, bool bCreat) {
+    if (!key) {
+        m_private->m_errno = eInvalidParam;
+        return false;
+    }
+
+    Value *val = NULL;
+    if (((!m_private->get_obj_value(key, &val) || val == NULL)
+        && m_private->m_errno != eNoEntry)
+        || (m_private->m_errno == eNoEntry && !bCreat)) {
+        return false;
+    }
+    try {
+        if (m_private->m_errno == eNoErr) {
+            if (!val->IsInt()) {
+                m_private->m_errno = eTypeMissmatch;
+                return false;
             }
+            
+            val->SetInt(in);
+        } else {
+            // no entry, create one
+            Value val_key(kStringType);
+            val_key.SetString(key, strlen(key), m_private->m_allocator);
+            m_private->m_val->AddMember(val_key, in, m_private->m_allocator);
         }
     } catch(...) {
-        CATCH_ERROR;
+        m_private->m_errno = eInternalError;
+        return false;
     }
-    return false;
+    
+    return true;
+}
+
+bool JsonHelper::set(const char *key, unsigned int in, bool bCreat) {
+    if (!key) {
+        m_private->m_errno = eInvalidParam;
+        return false;
+    }
+
+    Value *val = NULL;
+    if (((!m_private->get_obj_value(key, &val) || val == NULL)
+        && m_private->m_errno != eNoEntry)
+        || (m_private->m_errno == eNoEntry && !bCreat)) {
+        return false;
+    }
+    try {
+        if (m_private->m_errno == eNoErr) {
+            if (!val->IsUint()) {
+                m_private->m_errno = eTypeMissmatch;
+                return false;
+            }
+            
+            val->SetUint(in);
+        } else {
+            // no entry, create one
+            Value val_key(kStringType);
+            val_key.SetString(key, strlen(key), m_private->m_allocator);
+            m_private->m_val->AddMember(val_key, in, m_private->m_allocator);
+        }
+    } catch(...) {
+        m_private->m_errno = eInternalError;
+        return false;
+    }
+    
+    return true;
+}
+
+bool JsonHelper::set(const char *key, float in, bool bCreat) {
+    if (!key) {
+        m_private->m_errno = eInvalidParam;
+        return false;
+    }
+
+    Value *val = NULL;
+    if (((!m_private->get_obj_value(key, &val) || val == NULL)
+        && m_private->m_errno != eNoEntry)
+        || (m_private->m_errno == eNoEntry && !bCreat)) {
+        return false;
+    }
+    try {
+        if (m_private->m_errno == eNoErr) {
+            if (!val->IsFloat()) {
+                m_private->m_errno = eTypeMissmatch;
+                return false;
+            }
+            
+            val->SetFloat(in);
+        } else {
+            // no entry, create one
+            Value val_key(kStringType);
+            val_key.SetString(key, strlen(key), m_private->m_allocator);
+            m_private->m_val->AddMember(val_key, in, m_private->m_allocator);
+        }
+    } catch(...) {
+        m_private->m_errno = eInternalError;
+        return false;
+    }
+    
+    return true;
+}
+
+bool JsonHelper::set(const char *key, double in, bool bCreat) {
+    if (!key) {
+        m_private->m_errno = eInvalidParam;
+        return false;
+    }
+
+    Value *val = NULL;
+    if (((!m_private->get_obj_value(key, &val) || val == NULL)
+        && m_private->m_errno != eNoEntry)
+        || (m_private->m_errno == eNoEntry && !bCreat)) {
+        return false;
+    }
+    try {
+        if (m_private->m_errno == eNoErr) {
+            if (!val->IsDouble()) {
+                m_private->m_errno = eTypeMissmatch;
+                return false;
+            }
+            
+            val->SetDouble(in);
+        } else {
+            // no entry, create one
+            Value val_key(kStringType);
+            val_key.SetString(key, strlen(key), m_private->m_allocator);
+            m_private->m_val->AddMember(val_key, in, m_private->m_allocator);
+        }
+    } catch(...) {
+        m_private->m_errno = eInternalError;
+        return false;
+    }
+    
+    return true;
+}
+
+bool JsonHelper::set(const char *key, const int64_t &in, bool bCreat) {
+    if (!key) {
+        m_private->m_errno = eInvalidParam;
+        return false;
+    }
+
+    Value *val = NULL;
+    if (((!m_private->get_obj_value(key, &val) || val == NULL)
+        && m_private->m_errno != eNoEntry)
+        || (m_private->m_errno == eNoEntry && !bCreat)) {
+        return false;
+    }
+    try {
+        if (m_private->m_errno == eNoErr) {
+            if (!val->IsInt64()) {
+                m_private->m_errno = eTypeMissmatch;
+                return false;
+            }
+            
+            val->SetInt64(in);
+        } else {
+            // no entry, create one
+            Value val_key(kStringType);
+            val_key.SetString(key, strlen(key), m_private->m_allocator);
+            m_private->m_val->AddMember(val_key, in, m_private->m_allocator);
+        }
+    } catch(...) {
+        m_private->m_errno = eInternalError;
+        return false;
+    }
+    
+    return true;
+}
+
+bool JsonHelper::set(const char *key, const uint64_t &in, bool bCreat) {
+    if (!key) {
+        m_private->m_errno = eInvalidParam;
+        return false;
+    }
+
+    Value *val = NULL;
+    if (((!m_private->get_obj_value(key, &val) || val == NULL)
+        && m_private->m_errno != eNoEntry)
+        || (m_private->m_errno == eNoEntry && !bCreat)) {
+        return false;
+    }
+    try {
+        if (m_private->m_errno == eNoErr) {
+            if (!val->IsUint64()) {
+                m_private->m_errno = eTypeMissmatch;
+                return false;
+            }
+            
+            val->SetUint64(in);
+        } else {
+            // no entry, create one
+            Value val_key(kStringType);
+            val_key.SetString(key, strlen(key), m_private->m_allocator);
+            m_private->m_val->AddMember(val_key, in, m_private->m_allocator);
+        }
+    } catch(...) {
+        m_private->m_errno = eInternalError;
+        return false;
+    }
+    
+    return true;
 }
 
 bool JsonHelper::locate_obj(const char *key, bool bCreat) {
+    if (!key) {
+        m_private->m_errno = eInvalidParam;
+        return false;
+    }
+
+    Value *val = NULL;
+    if (((!m_private->get_obj_value(key, &val) || val == NULL)
+        && m_private->m_errno != eNoEntry)
+        || (m_private->m_errno == eNoEntry && !bCreat)) {
+        return false;
+    }
     try {
-        if (m_private->m_val && m_private->m_val->IsObject()) {
-            Value::MemberIterator itr = m_private->m_val->FindMember(key);        
-            if (itr != m_private->m_val->MemberEnd()) {
-                if (itr->value.IsObject()) {
-                    m_private->m_val = &(itr->value);
-                    m_private->m_track.push_back(m_private->m_val);
-                }
-                return true;
-            } else if (bCreat) {
-                Value val(kObjectType);
-                Value val_key(kStringType);
-                val_key.SetString(key, strlen(key), m_private->m_allocator);
-                m_private->m_val->AddMember(val_key, val, m_private->m_allocator);
-                return locate_obj(key);
+        if (m_private->m_errno == eNoErr) {
+            if (!val->IsObject()) {
+                m_private->m_errno = eTypeMissmatch;
+                return false;
             }
+            m_private->m_val = val;
+            m_private->m_track.push_back(key);
+        } else {
+            Value obj(kObjectType);
+            Value val_key(kStringType);
+            val_key.SetString(key, strlen(key), m_private->m_allocator);
+            m_private->m_val->AddMember(val_key, obj, m_private->m_allocator);
+            return locate_obj(key);
         }
     } catch(...) {
+        m_private->m_errno = eInternalError;
+        return false;
     }
-    return false;
+    
+    return true;
 }
+#if 0
 
 bool JsonHelper::locate_array(const char *key, bool bCreat) {
     try {
@@ -657,15 +891,31 @@ bool JsonHelper::add_into_obj() {
     }
     return false;
 }
-
-bool JsonHelper::out() {
-    if (m_private->m_track.size() > 1) {
-        m_private->m_track.pop_back();
-        m_private->m_val = m_private->m_track.back();
+#endif
+bool JsonHelper::out_obj() {
+    // at root
+    if (m_private->m_track.empty()) {
+        return false;
     }
+    
+    m_private->m_track.pop_back();
+    m_private->m_val = &m_private->m_doc;
+    // at root
+    if (m_private->m_track.empty()) {
+        return true;
+    }
+    list<string> path;
+    path.assign(m_private->m_track.begin(), m_private->m_track.end());
+    m_private->m_track.clear();
+    // skip root
+    list<string>::iterator iter = path.begin();
+    while (iter != path.end()) {
+        locate_obj(iter->c_str());
+        iter++;
+    }
+    
     return true;
 }
-#endif
 
 } // namespace tiny_utils
 #endif  // #if defined(ENABLE_JSON)

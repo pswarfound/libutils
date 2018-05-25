@@ -12,6 +12,7 @@ class JsonHelper
 {
  public:
     typedef enum {
+        eNoErr = 0,
         eInternalError = 100,
         eInvalidParam,
         eNotObject,
@@ -29,7 +30,7 @@ class JsonHelper
     bool get_doc(string &, bool bPretty = true);
     int get_errno(void);
     const string &get_error() const;
-
+    bool current(string &key);
     /// for locate then get/set operations
     bool get(const char *key, string *sval); 
     bool get(const char *key, int *ival);
@@ -38,17 +39,20 @@ class JsonHelper
     bool get(const char *key, uint64_t *ival);
     bool get(const char *key, float *fval);
     bool get(const char *key, double *fval);
-    #if 0
+
     bool set(const char *key, const char *val, bool bCreat = false);
     bool set(const char *key, const string &val, bool bCreat = false);
     bool set(const char *key, float fval, bool bCreat = false);
     bool set(const char *key, double fval, bool bCreat = false);
     bool set(const char *key, int ival, bool bCreat = false);
-    bool set(const char *key, int64_t fval, bool bCreat = false);
+    bool set(const char *key, const int64_t &fval, bool bCreat = false);
     bool set(const char *key, unsigned int ival, bool bCreat = false);
-    bool set(const char *key, uint64_t fval, bool bCreat = false);
-    
+    bool set(const char *key, const uint64_t &fval, bool bCreat = false);
+
     bool locate_obj(const char *key, bool bCreat = false);
+    bool out_obj();
+    
+    #if 0
     bool locate_array(const char *key, bool bCreat = false);
     #endif
     #if 0
@@ -66,10 +70,9 @@ class JsonHelper
     bool add_array(int &idx);
     bool locate_obj(size_t idx);
     bool locate_array(size_t idxe);
-    int size();
-    bool out();
-    bool clear();   
-    #endif
+    int size(); 
+     bool clear();  
+   #endif
  private:
     JsonImpl *m_private;
 };
