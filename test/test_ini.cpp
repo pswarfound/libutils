@@ -31,14 +31,36 @@ static IniHelper ini;
 
 INI_REG(open)
 {
+    if (argc < 2) {
+        return -1;
+    }
+
+    bool ret;
+    if (argc < 3) {
+        ret = ini.open(argv[1]);
+    } else {
+        ret = ini.open(argv[1], "w");
+    }
+    INI_VAR(ret?DBG_LV_INF:DBG_LV_ERR, "open %s %s", argv[1], ret?"successfully":"failed");
+    return 0;
+}
+
+INI_REG(locate)
+{
     if (argc < 3) {
         return -1;
     }
-    if (!ini.open(argv[1], argv[2])) {
-        INI_ERR("open %s failed\n", argv[1]);
-        return -1;        
+
+    string head = argv[1];
+
+    if (argc < 3) {
+        bool ret = ini.locate(head);
+        INI_VAR(ret?DBG_LV_INF:DBG_LV_ERR, "Head %s %s", head.c_str(), ret?"exists":"invalid");
+    } else {
+        string key = argv[2];
+        bool ret = ini.locate(head, key);
+        INI_VAR(ret?DBG_LV_INF:DBG_LV_ERR, "Head %s Key %s %s", head.c_str(), key.c_str(), ret?"exists":"invalid");
     }
-    INI_INF("open %s success\n", argv[1]);
     return 0;
 }
 
@@ -49,29 +71,32 @@ INI_REG(read)
         return -1;
     }
 
-    if (!ini.is_open()) {
-        INI_ERR("ini not opened\n");
-        return -1;
-    }
     string section = argv[1];
     string key = argv[2];
     string type = "string";
-
     if (argc > 3) {
         type = argv[3];
     }
+    
     Value val;
     bool ret = false;
     if (type == "string") {
-        ret = ini.read(section, key, &val.val_string());
+        val.reset(Value::stringValue);
+        ret = ini.read(section, key, &val.as_string());
     } else if (type == "int") {
-        ret = ini.read(section, key, &val.val_int());
-    } else if (type == "long") {
-        ret = ini.read(section, key, &val.val_int64());
+        val.reset(Value::intValue);
+        int base = argc > 4?atoi(argv[4]):base;
+        ret = ini.read(section, key, &val.as_int(), base);
+    } else if (type == "int64") {
+        val.reset(Value::int64Value);
+        int base = argc > 4?atoi(argv[4]):base;
+        ret = ini.read(section, key, &val.as_int64(), base);
     } else if (type == "float") {
-        ret = ini.read(section, key, &val.val_float());
+        val.reset(Value::floatValue);
+       ret = ini.read(section, key, &val.as_float());
     } else if (type == "double") {
-        ret = ini.read(section, key, &val.val_double());
+        val.reset(Value::realValue);
+        ret = ini.read(section, key, &val.as_real());
     }
     std::cout << "read section " << section
                 << " key " << key
@@ -87,18 +112,15 @@ INI_REG(delete)
         return -1;
     }
 
-    if (!ini.is_open()) {
-        INI_ERR("ini not opened\n");
-        return -1;
-    }
-    string section = argv[1];
+    string head = argv[1];
     
-    bool ret = false;
     if (argc < 3) {
-        ret = ini.remove(section);
+        bool ret = ini.remove(head);
+        INI_VAR(ret?DBG_LV_INF:DBG_LV_ERR, "remove HEAD %s %s", head.c_str(), ret?"successfully":"failed");
     } else {
         string key = argv[2];
-        ret = ini.remove(section, key);
+        bool ret = ini.remove(head, key);
+        INI_VAR(ret?DBG_LV_INF:DBG_LV_ERR, "remove HEAD %s KEY %s %s", head.c_str(), key.c_str(), ret?"successfully":"failed");
     }
     return 0;
 }
@@ -111,11 +133,7 @@ INI_REG(write)
         return -1;
     }
 
-    if (!ini.is_open()) {
-        INI_ERR("ini not opened\n");
-        return -1;
-    }
-    string section = argv[1];
+    string head = argv[1];
     string key = argv[2];
     string val = argv[3];
     bool create = false;
@@ -125,17 +143,15 @@ INI_REG(write)
     }
     
     bool ret = false;
-    ret = ini.write(section, key, create, "%s", val.c_str());
-
+    ret = ini.write(head, key, create, "%s", val.c_str());
+    INI_VAR(ret?DBG_LV_INF:DBG_LV_ERR, "write HEAD %s KEY %s %s", head.c_str(), key.c_str(), ret?"successfully":"failed");
     return 0;
 }
 
 INI_REG(save)
 {
-    if (!ini.save()) {
-        INI_ERR("ini save failed\n");
-        return -1;
-    }
+    bool ret = ini.save();
+    INI_VAR(ret?DBG_LV_INF:DBG_LV_ERR, "save %s", ret?"successfully":"failed");
     
     return 0;
 }

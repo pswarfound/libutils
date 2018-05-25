@@ -11,7 +11,21 @@ class ValueImpl;
 class Value
 {
  public:
+  public:
+     enum ValueType {
+        nullValue = 0, ///< 'null' value
+        intValue,      ///< signed integer value
+        uintValue,     ///< unsigned integer value
+        int64Value,
+        uint64Value,
+        floatValue,
+        realValue,     ///< double value
+        stringValue,   ///< UTF-8 string value
+        booleanValue,  ///< bool value
+    };
+    
     Value();
+    Value(ValueType e);
     ~Value();
     
     Value(int value);
@@ -23,20 +37,21 @@ class Value
     Value(const char *value);
     Value(const string &value);
     Value(bool value);
-    int &val_int();
-    unsigned int &val_uint();
-    int64_t &val_int64();
-    uint64_t &val_uint64();
-    float &val_float();
-    double &val_double();
-    string &val_string();
-    bool &val_bool();
+
+    void reset(ValueType e);
+    int &as_int();
+    unsigned int &as_uint();
+    int64_t &as_int64();
+    uint64_t &as_uint64();
+    float &as_float();
+    double &as_real();
+    string &as_string();
+    bool &as_bool();
     Value& operator=(const Value &other);
     friend std::ostream & operator<< (std::ostream &out, const tiny_utils::Value &obj);
 
  private:
     friend class ValueImpl;
-//    friend class ostream;
     ValueImpl *m_impl;
 };
 }  // namespace tiny_utils

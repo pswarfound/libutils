@@ -4,6 +4,8 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <vector>
+#include <iostream>
+#include <iomanip>
 #include "util_ini.hpp"
 #include "util_debug.hpp"
 #include "libini.h"
@@ -161,6 +163,7 @@ bool IniHelper::read(const string &head, const string &key, double *value)
     }
     errno = 0;
     *value = strtod(str.c_str(), NULL);
+    std::cout << std::setprecision(15) << *value << std::endl;
     if (errno == ERANGE) {
         return false;
     }
@@ -218,7 +221,6 @@ bool IniHelper::write(const string &head, const string &key, bool create, const 
     if (ini_locateKey(m_private->m_ini_fd, key.c_str()) != 0 && !create) {
         return false;
     }
-
 
     va_list ap;
     va_start(ap, fmt);

@@ -37,6 +37,7 @@ typedef enum {
 #define WRN(module, ...)    util_dbg_print(DBG_LV_WARN, module, __FILE__, __func__, __LINE__, __VA_ARGS__)
 #define ERR(module, ...)    util_dbg_print(DBG_LV_ERR, module, __FILE__, __func__, __LINE__, __VA_ARGS__)
 #define FTL(module, ...)    util_dbg_print(DBG_LV_FATAL, module, __FILE__, __func__, __LINE__, __VA_ARGS__)
+#define DBG_VAR(lv, module, ...)    util_dbg_print(lv, module, __FILE__, __func__, __LINE__, __VA_ARGS__)
 
 int util_dbg_set_detail(unsigned char lv, unsigned short inf);
 unsigned short util_dbg_get_detail(unsigned char lv);

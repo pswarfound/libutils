@@ -16,7 +16,7 @@ class IniHelper : public noncopyable
     IniHelper();
     ~IniHelper();
 
-    bool open(const string &file_path, const string &mode);
+    bool open(const string &file_path, const string &mode = "r");
     void close();
     bool is_open(void);
 
@@ -41,5 +41,6 @@ class IniHelper : public noncopyable
 #define INI_ERR(...) ERR("Ini", __VA_ARGS__)
 #define INI_WRN(...) WRN("Ini", __VA_ARGS__)
 #define INI_FTL(...) FTL("Ini", __VA_ARGS__)
+#define INI_VAR(lv, ...) DBG_VAR(lv, "Ini", __VA_ARGS__)
 
 } // namespace tiny_utils
