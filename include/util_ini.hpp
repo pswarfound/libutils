@@ -1,3 +1,4 @@
+#if defined(ENABLE_INI)
 #pragma once
 #include <stdint.h>
 #include <string>
@@ -44,3 +45,4 @@ class IniHelper : public noncopyable
 #define INI_VAR(lv, ...) DBG_VAR(lv, "Ini", __VA_ARGS__)
 
 } // namespace tiny_utils
+#endif  // #if defined(ENABLE_INI)

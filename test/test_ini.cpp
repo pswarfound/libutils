@@ -12,6 +12,7 @@
 #include "util_shell.hpp"
 #include "util_value.hpp"
 
+#if defined(ENABLE_INI)
 using namespace tiny_utils;
 using namespace std;
 
@@ -47,7 +48,7 @@ INI_REG(open)
 
 INI_REG(locate)
 {
-    if (argc < 3) {
+    if (argc < 2) {
         return -1;
     }
 
@@ -178,5 +179,4 @@ TEST_REG(ini)
 
     return 0;
 }
-
-
+#endif  // #if defined(ENABLE_INI)

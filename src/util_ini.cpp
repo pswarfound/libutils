@@ -10,6 +10,7 @@
 #include "util_debug.hpp"
 #include "libini.h"
 
+#if defined(ENABLE_INI)
 using std::string;
 using std::vector;
 
@@ -28,7 +29,7 @@ class IniImpl
             ini_close(m_ini_fd);
         }
     }
-    
+
     ini_fd_t m_ini_fd;
 };
 
@@ -53,7 +54,7 @@ bool IniHelper::is_open(void)
 bool IniHelper::open(const string &ini_file_path, const string &mode)
 {
     close();
-    
+
     if (ini_file_path.empty()) {
         return false;
     }
@@ -89,18 +90,18 @@ bool IniHelper::read(const string &head, const string &key, string *value)
         INI_ERR("locate head %s key %s\n", head.c_str(), key.c_str());
         return false;
     }
-    
+
     int len = ini_dataLength(m_private->m_ini_fd);
     if (len < 0) {
         return false;
     }
-    
+
     try {
         value->resize(len + 1);
     } catch(...) {
         return false;
     }
-    
+
     if (ini_readString(m_private->m_ini_fd, &(*value)[0], value->size()) != len) {
         INI_ERR("read val head %s key %s %s %d %d\n", head.c_str(), key.c_str(), &(*value)[0], len, value->size());
         return false;
@@ -241,4 +242,4 @@ bool IniHelper::save()
 }
 
 }// namespace tiny_utils
-
+#endif  // #if defined(ENABLE_INI)
