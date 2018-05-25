@@ -1,3 +1,4 @@
+#if defined(ENABLE_JSON)
 #include <stdlib.h>
 #include <iostream>
 #include <vector>
@@ -8,7 +9,8 @@
 #include "util_json.hpp"
 #include "util_debug.hpp"
 #include "util_misc.hpp"
-//#include "util_shell.hpp"
+#include "util_shell.hpp"
+#include "util_value.hpp"
 
 using namespace tiny_utils;
 using namespace std;
@@ -33,13 +35,11 @@ JSON_REG(open)
         return -1;
     }
 
-    if (!js.load_from_file(argv[1])) {
-        std::cout << "open " << argv[1] << " failed "
-                    << js.get_error()
-                    << std::endl;
-        return -1;
+    bool ret = js.load_from_file(argv[1]);
+    JS_VAR(ret?DBG_LV_INF:DBG_LV_ERR, "open %s %s %d", argv[1], ret?"successfully":"failed", js.get_errno());
+    if (ret) {
+        path = argv[1];
     }
-    path = argv[1];
     return 0;
 }
 
@@ -48,9 +48,7 @@ JSON_REG(show)
     string s;
     
     if (!js.get_doc(s)) {
-        std::cout << __func__ << " " << argv[1] << " failed "
-                    << js.get_error()
-                    << std::endl;
+        JS_ERR("get doc failed\n");
         return -1;
     }
     std::cout << s << std::endl;
@@ -64,37 +62,29 @@ JSON_REG(get)
     }
 
     bool ret;
-    int ival;
-    string sval;
-    float fval;
-    std::ostringstream ostr;
+    Value val;
     
     if (argc < 3 || !strcmp(argv[2], "string")) {
-        ret = js.get(argv[1], sval);
+        val.reset(Value::stringValue);
+        ret = js.get(argv[1], &val.as_string());
     } else if(!strcmp(argv[2], "int")) {
-        ret = js.get(argv[1], ival);
-        if (ret) {
-            ostr << ival;
-            sval = ostr.str();
-        }
+        val.reset(Value::intValue);
+        ret = js.get(argv[1], &val.as_int());
     } else if (!strcmp(argv[2], "float")) {
-        ret = js.get(argv[1], fval);
-        if (ret) {
-            ostr << fval;
-            sval = ostr.str();
-        }
+        val.reset(Value::floatValue);
+        ret = js.get(argv[1], &val.as_float());
     }
     
     if (!ret) {
-        std::cout << __func__ << " " << argv[1] << " failed "
-                    << js.get_error()
-                    << std::endl;
+        JS_ERR("get %s failed. errno = %d", argv[1], js.get_errno());
         return -1;
     }
-    std::cout << sval << std::endl;
+
+    std::cout << val << std::endl;
     return 0;
 }
 
+#if 0
 JSON_REG(set)
 {
     if (argc < 3) {
@@ -130,7 +120,7 @@ JSON_REG(close)
     return 0;
 
 }
-
+#endif
 JSON_REG(save)
 {
     if (argc < 2) {
@@ -165,5 +155,6 @@ static int do_json(int argc, const char **argv)
 
 TEST_REG(json)
 {
-//    start_shell("json", do_json);
+    start_shell("json>", do_json);
 }
+#endif  // #if defined(ENABLE_JSON)

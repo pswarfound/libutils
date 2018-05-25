@@ -86,11 +86,11 @@ INI_REG(read)
         ret = ini.read(section, key, &val.as_string());
     } else if (type == "int") {
         val.reset(Value::intValue);
-        int base = argc > 4?atoi(argv[4]):base;
+        int base = argc > 4?atoi(argv[4]):10;
         ret = ini.read(section, key, &val.as_int(), base);
     } else if (type == "int64") {
         val.reset(Value::int64Value);
-        int base = argc > 4?atoi(argv[4]):base;
+        int base = argc > 4?atoi(argv[4]):10;
         ret = ini.read(section, key, &val.as_int64(), base);
     } else if (type == "float") {
         val.reset(Value::floatValue);
