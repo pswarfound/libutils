@@ -12,6 +12,7 @@
 #include "rapidjson/prettywriter.h"
 #include "rapidjson/stringbuffer.h"
 #include "util_json.hpp"
+#include "util_misc.hpp"
 
 using namespace rapidjson;
 using std::string;
@@ -907,13 +908,45 @@ bool JsonHelper::out_obj() {
     list<string> path;
     path.assign(m_private->m_track.begin(), m_private->m_track.end());
     m_private->m_track.clear();
-    // skip root
+
     list<string>::iterator iter = path.begin();
     while (iter != path.end()) {
         locate_obj(iter->c_str());
         iter++;
     }
     
+    return true;
+}
+
+static bool parse_path(const char *path, list<string> &lst)
+{
+    str_split(path, '/', lst);
+}
+
+bool JsonHelper::locate_path(const char *path)
+{
+    list<string> lst;
+
+    parse_path(path, lst);
+    
+    m_private->m_errno = eNoErr;
+    m_private->m_track.clear();
+    m_private->m_val = &m_private->m_doc;
+    if (lst.empty()) {
+        m_private->m_errno = eInvalidParam;
+        return false;
+    }
+
+    list<string>::iterator iter = lst.begin();
+    while (iter != lst.end()) {
+        if (!locate_obj(iter->c_str())) {
+            m_private->m_track.clear();
+            m_private->m_val = &m_private->m_doc;
+            m_private->m_errno = eNoEntry;
+            return false;
+        }
+        iter++;
+    }
     return true;
 }
 

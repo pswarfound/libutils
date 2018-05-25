@@ -29,11 +29,11 @@ class VT100
         struct termios ts;
         tcgetattr(STDIN_FILENO, &ts);
         m_ts = ts;
-        ts.c_lflag &= ~(ICANON | ECHO); /* 关闭回终端回显功能*/
-        tcsetattr(STDIN_FILENO, TCSAFLUSH, &ts); /* 应用新终端设置 */
+        ts.c_lflag &= ~(ICANON | ECHO);
+        tcsetattr(STDIN_FILENO, TCSAFLUSH, &ts);
     };
     ~VT100() {
-        tcsetattr(STDIN_FILENO,TCSAFLUSH, &m_ts); /* 应用新终端设置 */
+        tcsetattr(STDIN_FILENO,TCSAFLUSH, &m_ts);
     }
 
     void move(int offset, dir_e e) {
@@ -214,7 +214,7 @@ void start_shell(const char *promt, shell_callback fn)
                 if (!line.empty()) {
                     const char **argv = NULL;
                     list<string> lst;
-                    str_split(line, lst);
+                    str_split(line, ' ', lst);
                     if (!lst.empty()) {                    
                         argv = (const char**)malloc(sizeof(char*) * lst.size());
                         size_t argc = 0;

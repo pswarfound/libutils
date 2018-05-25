@@ -51,7 +51,8 @@ class JsonHelper
 
     bool locate_obj(const char *key, bool bCreat = false);
     bool out_obj();
-    
+    bool locate_path(const char *path);
+  
     #if 0
     bool locate_array(const char *key, bool bCreat = false);
     #endif

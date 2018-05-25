@@ -66,7 +66,7 @@ static void __attribute__((destructor)) remove_pid_file(void)
     }
 }
 
-void str_split(const string &s, list<string> &lst)
+void str_split(const string &s, char c, list<string> &lst)
 {
     lst.clear();
     if (s.empty()) {
@@ -78,7 +78,7 @@ void str_split(const string &s, list<string> &lst)
     vector<char> arg;
 
     for (i = 0; i < len; i++) {
-        if (s[i] == ' ') {
+        if (s[i] == c) {
             if (!arg.empty()) {
                 string ss;
                 ss.assign(arg.begin(), arg.end());

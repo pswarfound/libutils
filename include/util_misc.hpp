@@ -9,5 +9,5 @@ namespace tiny_utils {
 
 bool util_create_pidfile(const char *path);
 
-void str_split(const string &s, list<string> &lst);
+void str_split(const string &s, char c, list<string> &lst);
 } // namespace tiny_utils
